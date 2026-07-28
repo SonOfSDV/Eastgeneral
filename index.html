@@ -61,6 +61,7 @@
     th, td { padding: 12px; text-align: left; border-bottom: 1px solid #edf2f7; vertical-align: middle; }
     th { background-color: #f7fafc; color: #4a5568; font-weight: 600; }
     td.number, th.number { text-align: right; }
+    tr.total-row { background-color: #f1f5f9; font-weight: bold; }
 
     .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
     .badge-normal { background-color: #c6f6d5; color: #22543d; }
@@ -205,7 +206,7 @@
     </div>
 
     <div class="card">
-      <h3>일반용역 상세 목록 <span style="font-size:13px; font-weight:normal; color:#64748b;">(사업명을 클릭하여 세부 비목을 확인하세요)</span></h3>
+      <h3>일반용역 상세 목록 <span style="font-size:13px; font-weight:normal; color:#64748b;">(사업명을 클릭하여 대금 지급 내역을 확인하세요)</span></h3>
       <table>
         <thead>
           <tr>
@@ -232,7 +233,7 @@
     </div>
 
     <div class="card">
-      <h3>기타용역 상세 목록 <span style="font-size:13px; font-weight:normal; color:#64748b;">(사업명을 클릭하여 세부 비목을 확인하세요)</span></h3>
+      <h3>기타용역 상세 목록 <span style="font-size:13px; font-weight:normal; color:#64748b;">(사업명을 클릭하여 대금 지급 내역을 확인하세요)</span></h3>
       <table>
         <thead>
           <tr>
@@ -263,7 +264,7 @@
 
     <div class="modal-grid">
       <div>
-        <h4 style="margin-top:0;">비목별 집행 비중</h4>
+        <h4 id="chartTitle" style="margin-top:0;">비목별 집행 비중</h4>
         <div class="modal-chart-container">
           <canvas id="detailPieChart"></canvas>
         </div>
@@ -280,15 +281,13 @@
       </div>
     </div>
 
-    <h4>비목별 세부 집행 현황 (천원)</h4>
+    <h4 id="tableTitle">세부 집행 현황 (천원)</h4>
     <table>
       <thead>
         <tr>
-          <th>비목 항목</th>
-          <th class="number">예산액</th>
-          <th class="number">집행액</th>
-          <th class="number">잔액</th>
-          <th class="number">집행률</th>
+          <th id="thCategoryName">구분</th>
+          <th class="number">금액 (천원)</th>
+          <th class="number">비중 (%)</th>
         </tr>
       </thead>
       <tbody id="detailTableBody">
@@ -354,7 +353,7 @@
     if (rateChartEtc) rateChartEtc.resize();
   }
 
-  // 2. 사업 분류별 페이지 렌더링 (예산, 집행액, 잔액, 집행률 표기)
+  // 2. 사업 분류별 페이지 렌더링
   function renderCategoryPage(categoryKey) {
     const data = categoryStore[categoryKey];
     let tbodyId = '';
@@ -471,7 +470,7 @@
     renderMonthlyChart(months, salesData, purchaseData, profitData);
   }
 
-  // 4. 모달 열기 및 세부 비목 렌더링
+  // 4. 모달 열기 및 세부 내용 렌더링
   function openDetailModal(categoryKey, index) {
     activeModalCategory = categoryKey;
     activeModalIndex = index;
@@ -482,12 +481,12 @@
     const name = row['사업명'] || row['프로젝트명'] || '사업 상세';
     document.getElementById('modalProjectName').innerText = name;
 
-    renderModalContent(row);
+    renderModalContent(row, categoryKey);
     document.getElementById('detailModal').classList.add('active');
   }
 
-  function renderModalContent(row) {
-    const category = row['분류'] || activeModalCategory;
+  function renderModalContent(row, categoryKey) {
+    const category = row['분류'] || categoryKey;
     const totalBudget = Number(row['예산']) || 0;
     const totalExecuted = Number(row['집행액']) || 0;
     const totalBalance = totalBudget - totalExecuted;
@@ -499,39 +498,84 @@
     document.getElementById('modalBalance').innerText = totalBalance.toLocaleString();
     document.getElementById('modalRate').innerText = totalRate + '%';
 
-    const items = [
-      { name: '인건비', key: '인건비' },
-      { name: '장비비', key: '장비비', altKey: '연구장비재료비' },
-      { name: '재료비', key: '재료비' },
-      { name: '연구활동비', key: '연구활동비', altKey: '활동비' },
-      { name: '간접비', key: '간접비' }
-    ];
-
     const detailTableBody = document.getElementById('detailTableBody');
     detailTableBody.innerHTML = '';
 
     const chartLabels = [];
     const chartData = [];
 
-    items.forEach(item => {
-      const execVal = Number(row[item.key]) || Number(row[item.altKey]) || Number(row[item.key + '_집행액']) || 0;
-      const budgetVal = Number(row[item.key + '_예산']) || Number(row[item.key + '예산']) || 0;
-      const balance = budgetVal > 0 ? budgetVal - execVal : 0;
-      const rate = budgetVal > 0 ? ((execVal / budgetVal) * 100).toFixed(1) : '- ';
+    // 국책과제일 때 (비목 형태)
+    if (categoryKey === '국책과제') {
+      document.getElementById('chartTitle').innerText = "비목별 집행 비중";
+      document.getElementById('tableTitle').innerText = "비목별 세부 집행 현황";
+      document.getElementById('thCategoryName').innerText = "비목 항목";
 
-      chartLabels.push(item.name);
-      chartData.push(execVal);
+      const items = [
+        { name: '인건비', key: '인건비' },
+        { name: '장비비', key: '장비비', altKey: '연구장비재료비' },
+        { name: '재료비', key: '재료비' },
+        { name: '연구활동비', key: '연구활동비', altKey: '활동비' },
+        { name: '간접비', key: '간접비' }
+      ];
 
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><b>${item.name}</b></td>
-        <td class="number">${budgetVal > 0 ? budgetVal.toLocaleString() : '-'}</td>
-        <td class="number">${execVal.toLocaleString()}</td>
-        <td class="number">${budgetVal > 0 ? balance.toLocaleString() : '-'}</td>
-        <td class="number">${rate}${rate !== '- ' ? '%' : ''}</td>
+      items.forEach(item => {
+        const val = Number(row[item.key]) || Number(row[item.altKey]) || 0;
+        const ratio = totalBudget > 0 ? ((val / totalBudget) * 100).toFixed(1) : 0;
+
+        chartLabels.push(item.name);
+        chartData.push(val);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${item.name}</b></td>
+          <td class="number">${val.toLocaleString()}</td>
+          <td class="number">${ratio}%</td>
+        `;
+        detailTableBody.appendChild(tr);
+      });
+
+    // 일반용역 및 기타용역일 때 (구글 시트 금액 직접 반영)
+    } else {
+      document.getElementById('chartTitle').innerText = "대금 구조 비율";
+      document.getElementById('tableTitle').innerText = "대금 지급 구분 현황";
+      document.getElementById('thCategoryName').innerText = "지급 구분";
+
+      const items = [
+        { name: '계약금', val: Number(row['계약금']) || 0 },
+        { name: '선금', val: Number(row['선금']) || 0 },
+        { name: '중도금', val: Number(row['중도금']) || 0 },
+        { name: '잔금', val: Number(row['잔금']) || 0 }
+      ];
+
+      let sumVal = 0;
+
+      items.forEach(item => {
+        sumVal += item.val;
+        const ratio = totalBudget > 0 ? ((item.val / totalBudget) * 100).toFixed(1) : 0;
+
+        chartLabels.push(item.name);
+        chartData.push(item.val);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${item.name}</b></td>
+          <td class="number">${item.val.toLocaleString()}</td>
+          <td class="number">${ratio}%</td>
+        `;
+        detailTableBody.appendChild(tr);
+      });
+
+      // 대금 항목 합계 행 추가
+      const totalRatio = totalBudget > 0 ? ((sumVal / totalBudget) * 100).toFixed(1) : 0;
+      const totalTr = document.createElement('tr');
+      totalTr.className = 'total-row';
+      totalTr.innerHTML = `
+        <td><b>대금 합계</b></td>
+        <td class="number">${sumVal.toLocaleString()}</td>
+        <td class="number">${totalRatio}%</td>
       `;
-      detailTableBody.appendChild(tr);
-    });
+      detailTableBody.appendChild(totalTr);
+    }
 
     renderDetailPieChart(chartLabels, chartData);
   }

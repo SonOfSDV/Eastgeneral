@@ -201,6 +201,7 @@
             <th>사업명</th>
             <th class="number">예산 (천원)</th>
             <th class="number">집행액 (천원)</th>
+            <th class="number">잔액 (천원)</th>
             <th class="number">집행률 (%)</th>
             <th style="text-align: center;">상태</th>
           </tr>
@@ -702,6 +703,38 @@
       }
     });
   }
+
+  // 1. 배포된 Google Apps Script URL을 아래에 넣으세요
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyQBRzF6l49OWEWLPzCfuzsFqiyBHAdmMGGkFR-8xik3riALHtQzLfLIjkpnxfowbE/exec";
+
+  // 2. 구글 시트에서 데이터 가져오기 함수
+  async function fetchGoogleSheetData() {
+    try {
+      const response = await fetch(GAS_URL);
+      const data = await response.json();
+
+      // categoryStore에 구글 시트 데이터 저장
+      categoryStore['국책과제'] = data['국책과제'] || [];
+      categoryStore['일반용역'] = data['일반용역'] || [];
+      categoryStore['기타용역'] = data['기타용역'] || [];
+
+      // 3. 각 탭 렌더링 및 통합 대시보드 갱신
+      renderCategoryPage('국책과제');
+      renderCategoryPage('일반용역');
+      renderCategoryPage('기타용역');
+      updateTotalMonthlyDashboard();
+
+      console.log("구글 시트 데이터 연동 완료");
+    } catch (error) {
+      console.error("데이터 로드 중 오류 발생:", error);
+      alert("구글 시트 데이터를 불러오지 못했습니다. Apps Script URL과 권한을 확인해주세요.");
+    }
+  }
+
+  // 페이지가 열릴 때 자동으로 구글 시트 데이터 로드
+  window.addEventListener('DOMContentLoaded', () => {
+    fetchGoogleSheetData();
+  });
 </script>
 
 </body>

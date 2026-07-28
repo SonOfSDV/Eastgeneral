@@ -11,8 +11,8 @@
 
   <style>
     * { box-sizing: border-box; }
-    body { font-family: 'Pretendard', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-    .container { max-width: 1000px; margin: 0 auto; }
+    body { font-family: 'Pretendard', -apple-system, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 1100px; margin: 0 auto; }
     
     header { background: #1b2a4a; color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
     header h1 { margin: 0 0 5px 0; font-size: 24px; }
@@ -21,11 +21,24 @@
     .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
     .upload-area { border: 2px dashed #3182ce; padding: 25px; text-align: center; border-radius: 8px; background: #ebf8ff; cursor: pointer; }
 
+    /* 요약 카드 그리드 */
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+    .kpi-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
+    .kpi-title { font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 6px; }
+    .kpi-value { font-size: 24px; font-weight: 800; }
+    .text-blue { color: #2563eb; }
+    .text-red { color: #dc2626; }
+    .text-green { color: #16a34a; }
+
+    /* 차트 및 레이아웃 */
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .chart-container { position: relative; height: 320px; width: 100%; }
 
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { padding: 12px; text-align: left; border-bottom: 1px solid #edf2f7; }
     th { background-color: #f7fafc; color: #4a5568; font-weight: 600; }
+    td.number { text-align: right; }
+    th.number { text-align: right; }
 
     .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
     .badge-normal { background-color: #c6f6d5; color: #22543d; }
@@ -37,10 +50,10 @@
 <div class="container">
   <header>
     <h1>EAST 매입매출현황</h1>
-    <p>EAST 매입매출시스템</p>
+    <p>EAST 매입매출시스템 · 월별 손익 통합 모니터링</p>
   </header>
 
-  <!-- 1. 엑셀 파일 파일 업로드 카드 -->
+  <!-- 1. 엑셀 파일 업로드 카드 -->
   <div class="card">
     <div class="upload-area" onclick="document.getElementById('excelInput').click()">
       <b>📁 엑셀 파일(.xlsx)을 업로드하세요</b> (클릭하여 파일 선택)
@@ -48,25 +61,68 @@
     </div>
   </div>
 
-  <!-- 2. 차트 영역 -->
-  <div class="card">
-    <h3>사업별 집행률 (%)</h3>
-    <div class="chart-container">
-      <canvas id="rateChart"></canvas>
+  <!-- 2. 매입/매출/손익 합계 요약 카운터 -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-title">총 매출액</div>
+      <div class="kpi-value text-blue" id="totalSales">0 원</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">총 매입액</div>
+      <div class="kpi-value text-red" id="totalPurchase">0 원</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">누적 영업손익</div>
+      <div class="kpi-value text-green" id="totalProfit">0 원</div>
     </div>
   </div>
 
-  <!-- 3. 데이터 테이블 영역 -->
+  <!-- 3. 차트 영역 (2열 레이아웃: 월별 매입매출 추이 + 사업별 집행률) -->
+  <div class="chart-grid">
+    <div class="card">
+      <h3>월별 매입·매출 및 손익 추이</h3>
+      <div class="chart-container">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>사업별 집행률 (%)</h3>
+      <div class="chart-container">
+        <canvas id="rateChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 월별 매입매출/손익 상세 테이블 -->
+  <div class="card">
+    <h3>월별 손익 상세 현황</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>월</th>
+          <th class="number">매출액 (원)</th>
+          <th class="number">매입액 (원)</th>
+          <th class="number">영업손익 (원)</th>
+          <th class="number">이익률 (%)</th>
+        </tr>
+      </thead>
+      <tbody id="monthlyTableBody">
+        <tr><td colspan="5" style="text-align:center; color:#a0aec0;">엑셀 파일을 업로드해 주세요.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. 기존 사업 상세 내역 테이블 -->
   <div class="card">
     <h3>사업 상세 내역</h3>
     <table>
       <thead>
         <tr>
           <th>사업명</th>
-          <th>예산 (천원)</th>
-          <th>집행액 (천원)</th>
-          <th>집행률 (%)</th>
-          <th>상태</th>
+          <th class="number">예산 (천원)</th>
+          <th class="number">집행액 (천원)</th>
+          <th class="number">집행률 (%)</th>
+          <th style="text-align: center;">상태</th>
         </tr>
       </thead>
       <tbody id="tableBody">
@@ -78,8 +134,8 @@
 
 <script>
   let rateChart = null;
+  let monthlyChart = null;
 
-  // 파일 업로드 이벤트 등록
   document.getElementById('excelInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -91,19 +147,21 @@
       const data = new Uint8Array(event.target.result);
       const workbook = XLSX.read(data, { type: 'array' });
 
-      // 첫번째 시트 읽기
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-
-      // JSON 데이터 변환
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
       
-      // 대시보드 업데이트
       updateDashboard(jsonData);
     };
   });
 
   function updateDashboard(data) {
+    updateBusinessTableAndChart(data);
+    updateMonthlyDataAndChart(data);
+  }
+
+  // 1. 기존 사업별 집행률 처리
+  function updateBusinessTableAndChart(data) {
     const tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = '';
 
@@ -111,7 +169,10 @@
     const rates = [];
 
     data.forEach(row => {
-      const name = row['사업명'] || '미지정';
+      // 사업명 또는 프로젝트명 컬럼 읽기
+      const name = row['사업명'] || row['프로젝트명'] || null;
+      if (!name) return;
+
       const budget = Number(row['예산']) || 0;
       const executed = Number(row['집행액']) || 0;
       const rate = budget > 0 ? ((executed / budget) * 100).toFixed(1) : 0;
@@ -123,10 +184,10 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><b>${name}</b></td>
-        <td>${budget.toLocaleString()}</td>
-        <td>${executed.toLocaleString()}</td>
-        <td>${rate}%</td>
-        <td>
+        <td class="number">${budget.toLocaleString()}</td>
+        <td class="number">${executed.toLocaleString()}</td>
+        <td class="number">${rate}%</td>
+        <td style="text-align: center;">
           <span class="badge ${isDanger ? 'badge-danger' : 'badge-normal'}">
             ${isDanger ? '위험' : '정상'}
           </span>
@@ -135,12 +196,75 @@
       tableBody.appendChild(tr);
     });
 
-    renderChart(labels, rates);
+    renderRateChart(labels, rates);
   }
 
-  function renderChart(labels, rates) {
-    const ctx = document.getElementById('rateChart').getContext('2d');
+  // 2. 월별 매입/매출/손익 데이터 처리
+  function updateMonthlyDataAndChart(data) {
+    const monthlySummary = {};
 
+    let grandSales = 0;
+    let grandPurchase = 0;
+
+    data.forEach(row => {
+      const month = row['월'] || row['일자'] || row['일시'];
+      const sales = Number(row['매출']) || Number(row['매출액']) || 0;
+      const purchase = Number(row['매입']) || Number(row['매입액']) || 0;
+
+      if (month) {
+        if (!monthlySummary[month]) {
+          monthlySummary[month] = { sales: 0, purchase: 0 };
+        }
+        monthlySummary[month].sales += sales;
+        monthlySummary[month].purchase += purchase;
+      }
+
+      grandSales += sales;
+      grandPurchase += purchase;
+    });
+
+    // KPI 카드 반영
+    const grandProfit = grandSales - grandPurchase;
+    document.getElementById('totalSales').innerText = grandSales.toLocaleString() + ' 원';
+    document.getElementById('totalPurchase').innerText = grandPurchase.toLocaleString() + ' 원';
+    document.getElementById('totalProfit').innerText = grandProfit.toLocaleString() + ' 원';
+
+    // 월별 데이터 집계 및 테이블 출력
+    const monthlyTableBody = document.getElementById('monthlyTableBody');
+    monthlyTableBody.innerHTML = '';
+
+    const months = Object.keys(monthlySummary);
+    const salesData = [];
+    const purchaseData = [];
+    const profitData = [];
+
+    months.forEach(m => {
+      const s = monthlySummary[m].sales;
+      const p = monthlySummary[m].purchase;
+      const profit = s - p;
+      const margin = s > 0 ? ((profit / s) * 100).toFixed(1) : 0;
+
+      salesData.push(s);
+      purchaseData.push(p);
+      profitData.push(profit);
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><b>${m}</b></td>
+        <td class="number">${s.toLocaleString()}</td>
+        <td class="number">${p.toLocaleString()}</td>
+        <td class="number" style="color:${profit >= 0 ? '#16a34a' : '#dc2626'}; font-weight:bold;">${profit.toLocaleString()}</td>
+        <td class="number">${margin}%</td>
+      `;
+      monthlyTableBody.appendChild(tr);
+    });
+
+    renderMonthlyChart(months, salesData, purchaseData, profitData);
+  }
+
+  // 사업별 집행률 차트
+  function renderRateChart(labels, rates) {
+    const ctx = document.getElementById('rateChart').getContext('2d');
     if (rateChart) rateChart.destroy();
 
     rateChart = new Chart(ctx, {
@@ -148,7 +272,7 @@
       data: {
         labels: labels,
         datasets: [{
-          label: '직접비 집행률 (%)',
+          label: '집행률 (%)',
           data: rates,
           backgroundColor: rates.map(r => r < 80 ? '#e53e3e' : '#38a169'),
           borderRadius: 6
@@ -157,11 +281,54 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: {
-          y: { beginAtZero: true, max: 100 }
-        },
+        scales: { y: { beginAtZero: true, max: 100 } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  // 월별 매입매출 및 손익 차트 (혼합 차트: 막대 + 꺾은선)
+  function renderMonthlyChart(months, sales, purchases, profits) {
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    if (monthlyChart) monthlyChart.destroy();
+
+    monthlyChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [
+          {
+            type: 'line',
+            label: '영업손익',
+            data: profits,
+            borderColor: '#16a34a',
+            backgroundColor: '#16a34a',
+            borderWidth: 3,
+            fill: false,
+            tension: 0.2
+          },
+          {
+            label: '매출액',
+            data: sales,
+            backgroundColor: '#3b82f6',
+            borderRadius: 4
+          },
+          {
+            label: '매입액',
+            data: purchases,
+            backgroundColor: '#ef4444',
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-          legend: { display: false }
+          legend: { position: 'top' }
+        },
+        scales: {
+          y: { beginAtZero: true }
         }
       }
     });

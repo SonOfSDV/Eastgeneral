@@ -99,7 +99,7 @@
     .modal-content {
       background: white;
       width: 90%;
-      max-width: 800px;
+      max-width: 850px;
       max-height: 90vh;
       overflow-y: auto;
       border-radius: 12px;
@@ -184,9 +184,9 @@
         <thead>
           <tr>
             <th>사업명</th>
-            <th class="number">예산 (천원)</th>
-            <th class="number">집행액 (천원)</th>
-            <th class="number">잔액 (천원)</th>
+            <th class="number">예산 (원)</th>
+            <th class="number">집행액 (원)</th>
+            <th class="number">잔액 (원)</th>
             <th class="number">집행률 (%)</th>
             <th style="text-align: center;">상태</th>
           </tr>
@@ -211,9 +211,9 @@
         <thead>
           <tr>
             <th>사업명</th>
-            <th class="number">예산 (천원)</th>
-            <th class="number">집행액 (천원)</th>
-            <th class="number">잔액 (천원)</th>
+            <th class="number">예산 (원)</th>
+            <th class="number">집행액 (원)</th>
+            <th class="number">잔액 (원)</th>
             <th class="number">집행률 (%)</th>
             <th style="text-align: center;">상태</th>
           </tr>
@@ -238,9 +238,9 @@
         <thead>
           <tr>
             <th>사업명</th>
-            <th class="number">예산 (천원)</th>
-            <th class="number">집행액 (천원)</th>
-            <th class="number">잔액 (천원)</th>
+            <th class="number">예산 (원)</th>
+            <th class="number">집행액 (원)</th>
+            <th class="number">잔액 (원)</th>
             <th class="number">집행률 (%)</th>
             <th style="text-align: center;">상태</th>
           </tr>
@@ -273,21 +273,19 @@
         <h4 style="margin-top:0;">사업 요약 정보</h4>
         <div style="background:#f8fafc; padding:15px; border-radius:8px; font-size:14px; line-height:1.8;">
           <div><b>분류:</b> <span id="modalCategory">-</span></div>
-          <div><b>총 예산:</b> <span id="modalBudget">0</span> 천원</div>
-          <div><b>총 집행액:</b> <span id="modalExecuted">0</span> 천원</div>
-          <div><b>총 잔액:</b> <span id="modalBalance">0</span> 천원</div>
+          <div><b>총 예산:</b> <span id="modalBudget">0</span> 원</div>
+          <div><b>총 집행액:</b> <span id="modalExecuted">0</span> 원</div>
+          <div><b>총 잔액:</b> <span id="modalBalance">0</span> 원</div>
           <div><b>집행률:</b> <span id="modalRate">0%</span></div>
         </div>
       </div>
     </div>
 
-    <h4 id="tableTitle">세부 집행 현황 (천원)</h4>
+    <h4 id="tableTitle">세부 집행 현황 (원)</h4>
     <table>
       <thead>
-        <tr>
-          <th id="thCategoryName">구분</th>
-          <th class="number">금액 (천원)</th>
-          <th class="number">비중 (%)</th>
+        <tr id="modalTableHead">
+          <!-- 동적 변환 영역 -->
         </tr>
       </thead>
       <tbody id="detailTableBody">
@@ -498,17 +496,23 @@
     document.getElementById('modalBalance').innerText = totalBalance.toLocaleString();
     document.getElementById('modalRate').innerText = totalRate + '%';
 
+    const modalTableHead = document.getElementById('modalTableHead');
     const detailTableBody = document.getElementById('detailTableBody');
     detailTableBody.innerHTML = '';
 
     const chartLabels = [];
     const chartData = [];
 
-    // 국책과제일 때 (비목 형태)
+    // 국책과제일 때 (집행액, 잔액 열 삭제 -> 항목 / 예산 / 비중 만 표기)
     if (categoryKey === '국책과제') {
-      document.getElementById('chartTitle').innerText = "비목별 집행 비중";
-      document.getElementById('tableTitle').innerText = "비목별 세부 집행 현황";
-      document.getElementById('thCategoryName').innerText = "비목 항목";
+      document.getElementById('chartTitle').innerText = "비목별 예산 비중";
+      document.getElementById('tableTitle').innerText = "비목별 세부 집행 현황 (원)";
+
+      modalTableHead.innerHTML = `
+        <th>비목 항목</th>
+        <th class="number">예산 (원)</th>
+        <th class="number">비중 (%)</th>
+      `;
 
       const items = [
         { name: '인건비', key: '인건비' },
@@ -518,27 +522,50 @@
         { name: '간접비', key: '간접비' }
       ];
 
+      let sumItemBudget = 0;
+
       items.forEach(item => {
-        const val = Number(row[item.key]) || Number(row[item.altKey]) || 0;
-        const ratio = totalBudget > 0 ? ((val / totalBudget) * 100).toFixed(1) : 0;
+        const itemExec = Number(row[item.key]) || Number(row[item.altKey]) || 0;
+        const itemBudget = Number(row[item.key + '_예산']) || Number(row[item.key + '예산']) || itemExec;
+        
+        // 전체 금액(예산) 대비 비중 계산
+        const ratio = totalBudget > 0 ? ((itemBudget / totalBudget) * 100).toFixed(1) : 0;
+
+        sumItemBudget += itemBudget;
 
         chartLabels.push(item.name);
-        chartData.push(val);
+        chartData.push(itemBudget);
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><b>${item.name}</b></td>
-          <td class="number">${val.toLocaleString()}</td>
+          <td class="number">${itemBudget.toLocaleString()}</td>
           <td class="number">${ratio}%</td>
         `;
         detailTableBody.appendChild(tr);
       });
 
-    // 일반용역 및 기타용역일 때 (구글 시트 금액 직접 반영)
+      // 비목 합계 행 추가
+      const totalRatio = totalBudget > 0 ? ((sumItemBudget / totalBudget) * 100).toFixed(1) : '0.0';
+      const totalTr = document.createElement('tr');
+      totalTr.className = 'total-row';
+      totalTr.innerHTML = `
+        <td><b>비목 합계</b></td>
+        <td class="number">${sumItemBudget.toLocaleString()}</td>
+        <td class="number">${totalRatio}%</td>
+      `;
+      detailTableBody.appendChild(totalTr);
+
+    // 일반용역 및 기타용역일 때
     } else {
       document.getElementById('chartTitle').innerText = "대금 구조 비율";
-      document.getElementById('tableTitle').innerText = "대금 지급 구분 현황";
-      document.getElementById('thCategoryName').innerText = "지급 구분";
+      document.getElementById('tableTitle').innerText = "대금 지급 구분 현황 (원)";
+
+      modalTableHead.innerHTML = `
+        <th>지급 구분</th>
+        <th class="number">금액 (원)</th>
+        <th class="number">비중 (%)</th>
+      `;
 
       const items = [
         { name: '계약금', val: Number(row['계약금']) || 0 },

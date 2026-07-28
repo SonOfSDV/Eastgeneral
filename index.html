@@ -63,12 +63,18 @@
     td.number, th.number { text-align: right; }
     tr.total-row { background-color: #f1f5f9; font-weight: bold; }
 
-    .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    /* 기본 배지 스타일 및 파스텔 톤 색상 정의 */
+    .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; }
     .badge-normal { background-color: #c6f6d5; color: #22543d; }
     .badge-danger { background-color: #fed7d7; color: #742a2a; }
 
-    /* 클릭 가능한 사업명 스타일 */
-    .project-link {
+    /* 항목 세부 모달용 파스텔 톤 배지 */
+    .badge-gov { background-color: #dcfce7; color: #166534; } /* 파스텔 초록 (국책과제) */
+    .badge-gen { background-color: #dbeafe; color: #1e40af; } /* 파스텔 파랑 (일반용역) */
+    .badge-etc { background-color: #fef3c7; color: #92400e; } /* 파스텔 노랑 (기타용역) */
+
+    /* 클릭 가능한 링크 스타일 */
+    .project-link, .month-link {
       display: inline-block;
       color: #1e293b;
       font-weight: 600;
@@ -78,7 +84,7 @@
       cursor: pointer;
       transition: all 0.2s ease-in-out;
     }
-    .project-link:hover {
+    .project-link:hover, .month-link:hover {
       color: #2563eb;
       background-color: #f1f5f9;
       transform: translateY(-2px);
@@ -153,7 +159,7 @@
     </div>
 
     <div class="card">
-      <h3>통합 월별 손익 상세 현황</h3>
+      <h3>통합 월별 손익 상세 현황 <span style="font-size:13px; font-weight:normal; color:#64748b;">(월 이름을 클릭하여 세부 매입/매출 항목을 확인하세요)</span></h3>
       <table>
         <thead>
           <tr>
@@ -271,7 +277,7 @@
       </div>
       <div>
         <h4 style="margin-top:0;">사업 요약 정보</h4>
-        <div style="background:#f8fafc; padding:15px; border-radius:8px; font-size:14px; line-height:1.8;">
+        <div style="background:#f8fafc; padding:15px; border-radius:8px; font-size:14px; line-height:1.8;" id="modalSummaryBox">
           <div><b>분류:</b> <span id="modalCategory">-</span></div>
           <div><b>총 예산:</b> <span id="modalBudget">0</span> 원</div>
           <div><b>총 집행액:</b> <span id="modalExecuted">0</span> 원</div>
@@ -311,9 +317,6 @@
     '일반용역': [],
     '기타용역': []
   };
-
-  let activeModalCategory = null;
-  let activeModalIndex = null;
 
   // 1. 구글 시트 데이터 로드 함수
   async function fetchGoogleSheetData() {
@@ -452,7 +455,7 @@
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><b>${m}</b></td>
+        <td><span class="month-link" onclick="openMonthlyDetailModal('${m}')">${m}월</span></td>
         <td class="number">${s.toLocaleString()}</td>
         <td class="number">${p.toLocaleString()}</td>
         <td class="number" style="color:${profit >= 0 ? '#16a34a' : '#dc2626'}; font-weight:bold;">${profit.toLocaleString()}</td>
@@ -468,11 +471,8 @@
     renderMonthlyChart(months, salesData, purchaseData, profitData);
   }
 
-  // 4. 모달 열기 및 세부 내용 렌더링
+  // 4-A. 사업별 세부 내역 모달
   function openDetailModal(categoryKey, index) {
-    activeModalCategory = categoryKey;
-    activeModalIndex = index;
-
     const row = categoryStore[categoryKey][index];
     if (!row) return;
 
@@ -483,6 +483,97 @@
     document.getElementById('detailModal').classList.add('active');
   }
 
+  // 4-B. 월별 세부 매입매출/손익 모달 (파스텔 색상 적용)
+  function openMonthlyDetailModal(selectedMonth) {
+    document.getElementById('modalProjectName').innerText = selectedMonth + '월 사업별 매입·매출 상세 현황';
+    document.getElementById('chartTitle').innerText = selectedMonth + '월 매출 구조';
+    document.getElementById('tableTitle').innerText = selectedMonth + '월 항목별 매입·매출 상세 (원)';
+
+    const categories = ['국책과제', '일반용역', '기타용역'];
+    const filteredRows = [];
+
+    categories.forEach(cat => {
+      categoryStore[cat].forEach(row => {
+        const month = String(row['월'] || row['일자']);
+        if (month === String(selectedMonth)) {
+          filteredRows.push({ ...row, _category: cat });
+        }
+      });
+    });
+
+    let totalSales = 0;
+    let totalPurchase = 0;
+
+    const modalTableHead = document.getElementById('modalTableHead');
+    const detailTableBody = document.getElementById('detailTableBody');
+    detailTableBody.innerHTML = '';
+
+    modalTableHead.innerHTML = `
+      <th>분류</th>
+      <th>사업명</th>
+      <th class="number">매출액 (원)</th>
+      <th class="number">매입액 (원)</th>
+      <th class="number">영업손익 (원)</th>
+      <th class="number">이익률 (%)</th>
+    `;
+
+    filteredRows.forEach(row => {
+      const name = row['사업명'] || row['프로젝트명'] || '-';
+      const sales = Number(row['매출']) || Number(row['매출액']) || 0;
+      const purchase = Number(row['매입']) || Number(row['매입액']) || 0;
+      const profit = sales - purchase;
+      const margin = sales > 0 ? ((profit / sales) * 100).toFixed(1) : '0.0';
+
+      totalSales += sales;
+      totalPurchase += purchase;
+
+      // 항목별 파스텔 배지 클래스 지정
+      let badgeClass = 'badge-gov';
+      if (row._category === '일반용역') badgeClass = 'badge-gen';
+      else if (row._category === '기타용역') badgeClass = 'badge-etc';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="badge ${badgeClass}">${row._category}</span></td>
+        <td><b>${name}</b></td>
+        <td class="number">${sales.toLocaleString()}</td>
+        <td class="number">${purchase.toLocaleString()}</td>
+        <td class="number" style="color:${profit >= 0 ? '#16a34a' : '#dc2626'}; font-weight:bold;">${profit.toLocaleString()}</td>
+        <td class="number">${margin}%</td>
+      `;
+      detailTableBody.appendChild(tr);
+    });
+
+    const totalProfit = totalSales - totalPurchase;
+    const totalMargin = totalSales > 0 ? ((totalProfit / totalSales) * 100).toFixed(1) : '0.0';
+
+    // 월별 요약 상자
+    document.getElementById('modalSummaryBox').innerHTML = `
+      <div><b>대상 월:</b> ${selectedMonth}월</div>
+      <div><b>총 매출액:</b> <span style="color:#2563eb; font-weight:bold;">${totalSales.toLocaleString()}</span> 원</div>
+      <div><b>총 매입액:</b> <span style="color:#dc2626; font-weight:bold;">${totalPurchase.toLocaleString()}</span> 원</div>
+      <div><b>영업손익:</b> <span style="color:${totalProfit >= 0 ? '#16a34a' : '#dc2626'}; font-weight:bold;">${totalProfit.toLocaleString()}</span> 원</div>
+      <div><b>평균 이익률:</b> ${totalMargin}%</div>
+    `;
+
+    // 합계 행 추가
+    const totalTr = document.createElement('tr');
+    totalTr.className = 'total-row';
+    totalTr.innerHTML = `
+      <td colspan="2"><b>${selectedMonth}월 합계</b></td>
+      <td class="number">${totalSales.toLocaleString()}</td>
+      <td class="number">${totalPurchase.toLocaleString()}</td>
+      <td class="number" style="color:${totalProfit >= 0 ? '#16a34a' : '#dc2626'};">${totalProfit.toLocaleString()}</td>
+      <td class="number">${totalMargin}%</td>
+    `;
+    detailTableBody.appendChild(totalTr);
+
+    // 차트 생성 (파스텔 톤 차트 연동)
+    renderDetailPieChart(['매입액', '영업손익'], [totalPurchase, totalProfit > 0 ? totalProfit : 0]);
+
+    document.getElementById('detailModal').classList.add('active');
+  }
+
   function renderModalContent(row, categoryKey) {
     const category = row['분류'] || categoryKey;
     const totalBudget = Number(row['예산']) || 0;
@@ -490,11 +581,13 @@
     const totalBalance = totalBudget - totalExecuted;
     const totalRate = totalBudget > 0 ? ((totalExecuted / totalBudget) * 100).toFixed(1) : 0;
 
-    document.getElementById('modalCategory').innerText = category;
-    document.getElementById('modalBudget').innerText = totalBudget.toLocaleString();
-    document.getElementById('modalExecuted').innerText = totalExecuted.toLocaleString();
-    document.getElementById('modalBalance').innerText = totalBalance.toLocaleString();
-    document.getElementById('modalRate').innerText = totalRate + '%';
+    document.getElementById('modalSummaryBox').innerHTML = `
+      <div><b>분류:</b> <span>${category}</span></div>
+      <div><b>총 예산:</b> <span>${totalBudget.toLocaleString()}</span> 원</div>
+      <div><b>총 집행액:</b> <span>${totalExecuted.toLocaleString()}</span> 원</div>
+      <div><b>총 잔액:</b> <span>${totalBalance.toLocaleString()}</span> 원</div>
+      <div><b>집행률:</b> <span>${totalRate}%</span></div>
+    `;
 
     const modalTableHead = document.getElementById('modalTableHead');
     const detailTableBody = document.getElementById('detailTableBody');
@@ -503,7 +596,6 @@
     const chartLabels = [];
     const chartData = [];
 
-    // 국책과제일 때 (집행액, 잔액 열 삭제 -> 항목 / 예산 / 비중 만 표기)
     if (categoryKey === '국책과제') {
       document.getElementById('chartTitle').innerText = "비목별 예산 비중";
       document.getElementById('tableTitle').innerText = "비목별 세부 집행 현황 (원)";
@@ -527,12 +619,9 @@
       items.forEach(item => {
         const itemExec = Number(row[item.key]) || Number(row[item.altKey]) || 0;
         const itemBudget = Number(row[item.key + '_예산']) || Number(row[item.key + '예산']) || itemExec;
-        
-        // 전체 금액(예산) 대비 비중 계산
         const ratio = totalBudget > 0 ? ((itemBudget / totalBudget) * 100).toFixed(1) : 0;
 
         sumItemBudget += itemBudget;
-
         chartLabels.push(item.name);
         chartData.push(itemBudget);
 
@@ -545,7 +634,6 @@
         detailTableBody.appendChild(tr);
       });
 
-      // 비목 합계 행 추가
       const totalRatio = totalBudget > 0 ? ((sumItemBudget / totalBudget) * 100).toFixed(1) : '0.0';
       const totalTr = document.createElement('tr');
       totalTr.className = 'total-row';
@@ -556,7 +644,6 @@
       `;
       detailTableBody.appendChild(totalTr);
 
-    // 일반용역 및 기타용역일 때
     } else {
       document.getElementById('chartTitle').innerText = "대금 구조 비율";
       document.getElementById('tableTitle').innerText = "대금 지급 구분 현황 (원)";
@@ -592,7 +679,6 @@
         detailTableBody.appendChild(tr);
       });
 
-      // 대금 항목 합계 행 추가
       const totalRatio = totalBudget > 0 ? ((sumVal / totalBudget) * 100).toFixed(1) : 0;
       const totalTr = document.createElement('tr');
       totalTr.className = 'total-row';
@@ -609,8 +695,6 @@
 
   function closeModal() {
     document.getElementById('detailModal').classList.remove('active');
-    activeModalCategory = null;
-    activeModalIndex = null;
   }
 
   window.onclick = function(event) {
@@ -630,7 +714,7 @@
         datasets: [{
           label: '집행률 (%)',
           data: rates,
-          backgroundColor: rates.map(r => r < 80 ? '#e53e3e' : '#38a169'),
+          backgroundColor: rates.map(r => r < 80 ? '#fca5a5' : '#86efac'), // 파스텔 레드 / 파스텔 그린
           borderRadius: 6
         }]
       },
@@ -653,7 +737,7 @@
         labels: labels,
         datasets: [{
           data: data,
-          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
+          backgroundColor: ['#93c5fd', '#86efac', '#fde047', '#c084fc', '#f472b6'] // 파스텔 팔레트
         }]
       },
       options: {
@@ -674,8 +758,8 @@
         labels: months,
         datasets: [
           { type: 'line', label: '영업손익', data: profits, borderColor: '#16a34a', backgroundColor: '#16a34a', borderWidth: 3, fill: false },
-          { label: '매출액', data: sales, backgroundColor: '#3b82f6', borderRadius: 4 },
-          { label: '매입액', data: purchases, backgroundColor: '#ef4444', borderRadius: 4 }
+          { label: '매출액', data: sales, backgroundColor: '#93c5fd', borderRadius: 4 }, // 파스텔 블루
+          { label: '매입액', data: purchases, backgroundColor: '#fca5a5', borderRadius: 4 } // 파스텔 레드
         ]
       },
       options: {

@@ -104,7 +104,7 @@
     .modal-content {
       background: white;
       width: 90%;
-      max-width: 850px;
+      max-width: 880px;
       max-height: 90vh;
       overflow-y: auto;
       border-radius: 12px;
@@ -292,13 +292,16 @@
 </div>
 
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbxRt7hvzIjsQMRYSsoP4fZEl79PvZQCmVE80RNqv4xHAYlWlI_7c5E1sH2Ao6T2P3EO/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyZ-d5WEeLno018-nO-BEpm7WEE7nX7_TebhyODDlntPNIhDWJbdkJEFo2GKIoeoGBT/exec";
 
   let monthlyChart = null;
   let rateChartGov = null;
   let rateChartGen = null;
   let rateChartEtc = null;
   let detailPieChart = null;
+
+  // 전체 구글 시트 원본 데이터 (개별 과제 시트 포함)
+  let globalDataStore = {};
 
   // 1. 메인 시트 데이터 저장소 (국책과제, 일반용역, 기타용역)
   const categoryStore = {
@@ -317,8 +320,8 @@
   function parseNum(val) {
     if (val === undefined || val === null || val === '') return 0;
     if (typeof val === 'number') return isNaN(val) ? 0 : val;
-    const cleaned = String(val).replace(/,/g, '').trim();
-    const num = Number(cleaned);
+    const cleaned = String(val).replace(/[^0-9.-]/g, '').trim();
+    const num = parseFloat(cleaned);
     return isNaN(num) ? 0 : num;
   }
 
@@ -327,6 +330,8 @@
     try {
       const response = await fetch(GAS_URL);
       const data = await response.json();
+      
+      globalDataStore = data; // 전체 개별 시트 보관
 
       // 메인 시트 데이터 할당
       categoryStore['국책과제'] = data['국책과제'] || [];
@@ -346,7 +351,7 @@
       // 세부 시트 기반 통합 월별 손익 현황 계산 및 렌더링
       updateTotalMonthlyDashboard();
 
-      console.log("구글 시트 연동 데이터 완벽 로드됨");
+      console.log("구글 시트 연동 데이터 완벽 로드됨", globalDataStore);
     } catch (error) {
       console.error("데이터 로드 실패:", error);
       alert("구글 시트 데이터를 불러오는 데 실패했습니다.");
@@ -494,7 +499,7 @@
     renderMonthlyChart(months, salesData, purchaseData, profitData);
   }
 
-  // 사업 세부 내역 모달 열기 (비목별 금액 및 비율 표시)
+  // 사업 세부 내역 모달 열기
   function openDetailModal(categoryKey, index) {
     const row = categoryStore[categoryKey][index];
     if (!row) return;
@@ -502,7 +507,7 @@
     const name = row['사업명'] || row['프로젝트명'] || '사업 상세';
     document.getElementById('modalProjectName').innerText = `${categoryKey} - ${name}`;
 
-    renderModalContent(row, categoryKey);
+    renderModalContent(name, row, categoryKey);
     document.getElementById('detailModal').classList.add('active');
   }
 
@@ -606,21 +611,8 @@
     document.getElementById('detailModal').classList.add('active');
   }
 
-  function renderModalContent(row, categoryKey) {
-    const category = row['분류'] || categoryKey;
-    const totalBudget = parseNum(row['예산']);
-    const totalExecuted = parseNum(row['집행액']);
-    const totalBalance = totalBudget - totalExecuted;
-    const totalRate = totalBudget > 0 ? ((totalExecuted / totalBudget) * 100).toFixed(1) : 0;
-
-    document.getElementById('modalSummaryBox').innerHTML = `
-      <div><b>분류:</b> <span>${category}</span></div>
-      <div><b>총 예산:</b> <span>${totalBudget.toLocaleString()}</span> 원</div>
-      <div><b>총 집행액:</b> <span>${totalExecuted.toLocaleString()}</span> 원</div>
-      <div><b>총 잔액:</b> <span>${totalBalance.toLocaleString()}</span> 원</div>
-      <div><b>집행률:</b> <span>${totalRate}%</span></div>
-    `;
-
+  // ★ 국책과제 개별 시트 연동 모달 렌더링 함수
+  function renderModalContent(projectName, row, categoryKey) {
     const modalTableHead = document.getElementById('modalTableHead');
     const detailTableBody = document.getElementById('detailTableBody');
     detailTableBody.innerHTML = '';
@@ -629,54 +621,99 @@
     const chartData = [];
 
     if (categoryKey === '국책과제') {
-      document.getElementById('chartTitle').innerText = "비목별 예산 비중";
-      document.getElementById('tableTitle').innerText = "비목별 세부 집행 현황 (원)";
-
-      modalTableHead.innerHTML = `
-        <th>비목 항목</th>
-        <th class="number">예산 (원)</th>
-        <th class="number">비중 (%)</th>
-      `;
-
-      const items = [
-        { name: '인건비', key: '인건비' },
-        { name: '장비비', key: '장비비', altKey: '연구장비재료비' },
-        { name: '재료비', key: '재료비' },
-        { name: '연구활동비', key: '연구활동비', altKey: '활동비' },
-        { name: '간접비', key: '간접비' }
-      ];
-
-      let sumItemBudget = 0;
-
-      items.forEach(item => {
-        const itemExec = parseNum(row[item.key] || row[item.altKey]);
-        const itemBudget = parseNum(row[item.key + '_예산'] || row[item.key + '예산']) || itemExec;
-        const ratio = totalBudget > 0 ? ((itemBudget / totalBudget) * 100).toFixed(1) : 0;
-
-        sumItemBudget += itemBudget;
-        chartLabels.push(item.name);
-        chartData.push(itemBudget);
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><b>${item.name}</b></td>
-          <td class="number">${itemBudget.toLocaleString()}</td>
-          <td class="number">${ratio}%</td>
-        `;
-        detailTableBody.appendChild(tr);
+      // 1. 사업명과 완전히 일치하거나 포함하는 개별 시트 찾기
+      let matchedSheetKey = Object.keys(globalDataStore).find(key => {
+        const k = key.trim();
+        const p = projectName.trim();
+        return k === p || p.includes(k) || k.includes(p);
       });
 
-      const totalRatio = totalBudget > 0 ? ((sumItemBudget / totalBudget) * 100).toFixed(1) : '0.0';
-      const totalTr = document.createElement('tr');
-      totalTr.className = 'total-row';
-      totalTr.innerHTML = `
-        <td><b>비목 합계</b></td>
-        <td class="number">${sumItemBudget.toLocaleString()}</td>
-        <td class="number">${totalRatio}%</td>
-      `;
-      detailTableBody.appendChild(totalTr);
+      const projectSheetData = matchedSheetKey ? globalDataStore[matchedSheetKey] : null;
+
+      if (projectSheetData && projectSheetData.length > 0) {
+        document.getElementById('chartTitle').innerText = "비목별 예산 비중";
+        document.getElementById('tableTitle').innerText = "비목별 세부 집행 현황 (원)";
+
+        // 헤더: 비목 항목 | 예산 | 소진액 | 잔액 | 집행률 | 비중
+        modalTableHead.innerHTML = `
+          <th>비목 항목</th>
+          <th class="number">예산 (원)</th>
+          <th class="number">소진액 (원)</th>
+          <th class="number">잔액 (원)</th>
+          <th class="number">집행률 (%)</th>
+          <th class="number">비중 (%)</th>
+        `;
+
+        let grandBudget = 0;
+        let grandSpent = 0;
+
+        // 2. 총 예산 및 총 소진액 합계 집계
+        projectSheetData.forEach(item => {
+          const b = parseNum(item['예산'] || item['예산액'] || item['금액']);
+          const s = parseNum(item['소진액'] || item['집행액'] || item['사용액']);
+          grandBudget += b;
+          grandSpent += s;
+        });
+
+        // 3. 비목별 항목 계산 및 표 행 생성
+        projectSheetData.forEach(itemRow => {
+          const title = itemRow['비목 항목'] || itemRow['비목'] || itemRow['항목'] || '기타';
+          const budget = parseNum(itemRow['예산'] || itemRow['예산액'] || itemRow['금액']);
+          const spent = parseNum(itemRow['소진액'] || itemRow['집행액'] || itemRow['사용액']);
+
+          const balance = budget - spent;
+          const executeRate = budget > 0 ? ((spent / budget) * 100).toFixed(1) : '0.0';
+          const ratio = grandBudget > 0 ? ((budget / grandBudget) * 100).toFixed(1) : '0.0';
+
+          if (title) {
+            chartLabels.push(title);
+            chartData.push(budget);
+          }
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><b>${title}</b></td>
+            <td class="number">${budget.toLocaleString()}</td>
+            <td class="number">${spent.toLocaleString()}</td>
+            <td class="number" style="color:${balance < 0 ? '#dc2626' : '#333'};">${balance.toLocaleString()}</td>
+            <td class="number">${executeRate}%</td>
+            <td class="number">${ratio}%</td>
+          `;
+          detailTableBody.appendChild(tr);
+        });
+
+        // 4. 총계 행 생성
+        const grandBalance = grandBudget - grandSpent;
+        const grandRate = grandBudget > 0 ? ((grandSpent / grandBudget) * 100).toFixed(1) : '0.0';
+
+        const totalTr = document.createElement('tr');
+        totalTr.className = 'total-row';
+        totalTr.innerHTML = `
+          <td><b>비목 합계</b></td>
+          <td class="number">${grandBudget.toLocaleString()}</td>
+          <td class="number">${grandSpent.toLocaleString()}</td>
+          <td class="number" style="color:${grandBalance < 0 ? '#dc2626' : '#16a34a'};">${grandBalance.toLocaleString()}</td>
+          <td class="number">${grandRate}%</td>
+          <td class="number">100.0%</td>
+        `;
+        detailTableBody.appendChild(totalTr);
+
+        // 5. 요약 정보 박스 업데이트
+        document.getElementById('modalSummaryBox').innerHTML = `
+          <div><b>분류:</b> 국책과제</div>
+          <div><b>사업명:</b> <span>${projectName}</span></div>
+          <div><b>연동 시트:</b> <span style="color:#2563eb; font-weight:bold;">${matchedSheetKey}</span></div>
+          <div><b>총 예산:</b> <span>${grandBudget.toLocaleString()}</span> 원</div>
+          <div><b>총 소진액:</b> <span style="color:#2563eb; font-weight:bold;">${grandSpent.toLocaleString()}</span> 원</div>
+          <div><b>총 잔액:</b> <span style="color:${grandBalance < 0 ? '#dc2626' : '#16a34a'}; font-weight:bold;">${grandBalance.toLocaleString()}</span> 원</div>
+          <div><b>집행률:</b> <span style="font-weight:bold;">${grandRate}%</span></div>
+        `;
+      } else {
+        detailTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#a0aec0; padding:20px;">'${projectName}' 이름의 개별 시트를 찾을 수 없습니다. 시트 탭 이름을 확인해 주세요.</td></tr>`;
+      }
 
     } else {
+      // 일반용역 및 기타용역 (대금 구분 현황)
       document.getElementById('chartTitle').innerText = "대금 구조 비율";
       document.getElementById('tableTitle').innerText = "대금 지급 구분 현황 (원)";
 
@@ -686,6 +723,7 @@
         <th class="number">비중 (%)</th>
       `;
 
+      const totalBudget = parseNum(row['예산']);
       const items = [
         { name: '계약금', val: parseNum(row['계약금']) },
         { name: '선금', val: parseNum(row['선금']) },
@@ -720,6 +758,18 @@
         <td class="number">${totalRatio}%</td>
       `;
       detailTableBody.appendChild(totalTr);
+
+      const totalExecuted = parseNum(row['집행액']);
+      const totalBalance = totalBudget - totalExecuted;
+      const totalRate = totalBudget > 0 ? ((totalExecuted / totalBudget) * 100).toFixed(1) : 0;
+
+      document.getElementById('modalSummaryBox').innerHTML = `
+        <div><b>분류:</b> <span>${categoryKey}</span></div>
+        <div><b>총 예산:</b> <span>${totalBudget.toLocaleString()}</span> 원</div>
+        <div><b>총 집행액:</b> <span>${totalExecuted.toLocaleString()}</span> 원</div>
+        <div><b>총 잔액:</b> <span>${totalBalance.toLocaleString()}</span> 원</div>
+        <div><b>집행률:</b> <span>${totalRate}%</span></div>
+      `;
     }
 
     renderDetailPieChart(chartLabels, chartData);

@@ -145,7 +145,7 @@
     <button class="tab-btn active" onclick="switchPage('page-total', this)">📊 통합 월별 손익 현황</button>
     <button class="tab-btn" onclick="switchPage('page-gov', this)">🏛️ 국책과제 현황</button>
     <button class="tab-btn" onclick="switchPage('page-gen', this)">💼 일반용역 현황</button>
-    <button class="tab-btn" onclick="switchPage('page-etc', this)">🧩 기타용역 현황</button>
+    <button class="tab-btn" onclick="switchPage('page-etc', this)">🧩 기타사업 현황</button>
   </div>
 
   <!-- TAB 1: 통합 월별 손익 현황 (세부 시트 데이터 연동) -->
@@ -243,15 +243,15 @@
     </div>
   </div>
 
-  <!-- TAB 4: 기타용역 현황 (기타용역 시트 연동) -->
+  <!-- TAB 4: 기타사업 현황 (기타사업 시트 연동) -->
   <div id="page-etc" class="page-content">
     <div class="card">
-      <h3>기타용역 사업별 집행률 (%)</h3>
+      <h3>기타사업 사업별 집행률 (%)</h3>
       <div class="chart-container"><canvas id="rateChartEtc"></canvas></div>
     </div>
 
     <div class="card">
-      <h3>기타용역 상세 목록</h3>
+      <h3>기타사업 상세 목록</h3>
       <table>
         <thead>
           <tr>
@@ -264,7 +264,7 @@
           </tr>
         </thead>
         <tbody id="tableEtc">
-          <tr><td colspan="6" style="text-align:center; color:#a0aec0;">등록된 기타용역 데이터가 없습니다.</td></tr>
+          <tr><td colspan="6" style="text-align:center; color:#a0aec0;">등록된 기타사업 데이터가 없습니다.</td></tr>
         </tbody>
       </table>
     </div>
@@ -323,13 +323,13 @@
   const categoryStore = {
     '국책과제': [],
     '일반용역': [],
-    '기타용역': []
+    '기타사업': []
   };
 
   const detailStore = {
     '국책과제세부': [],
     '일반용역세부': [],
-    '기타용역세부': []
+    '기타사업세부': []
   };
 
   function parseNum(val) {
@@ -361,15 +361,15 @@
 
       categoryStore['국책과제'] = data['국책과제'] || [];
       categoryStore['일반용역'] = data['일반용역'] || [];
-      categoryStore['기타용역'] = data['기타용역'] || [];
+      categoryStore['기타사업'] = data['기타사업'] || [];
 
       detailStore['국책과제세부'] = data['국책과제세부'] || [];
       detailStore['일반용역세부'] = data['일반용역세부'] || [];
-      detailStore['기타용역세부'] = data['기타용역세부'] || [];
+      detailStore['기타사업세부'] = data['기타사업세부'] || [];
 
       renderCategoryPage('국책과제');
       renderCategoryPage('일반용역');
-      renderCategoryPage('기타용역');
+      renderCategoryPage('기타사업');
 
       updateTotalMonthlyDashboard();
     } catch (error) {
@@ -397,7 +397,7 @@
 
     if (categoryKey === '국책과제') tbodyId = 'tableGov';
     else if (categoryKey === '일반용역') tbodyId = 'tableGen';
-    else if (categoryKey === '기타용역') tbodyId = 'tableEtc';
+    else if (categoryKey === '기타사업') tbodyId = 'tableEtc';
 
     const tableBody = document.getElementById(tbodyId);
     tableBody.innerHTML = '';
@@ -440,14 +440,14 @@
 
     if (categoryKey === '국책과제') rateChartGov = renderBarChart('rateChartGov', rateChartGov, labels, rates);
     else if (categoryKey === '일반용역') rateChartGen = renderBarChart('rateChartGen', rateChartGen, labels, rates);
-    else if (categoryKey === '기타용역') rateChartEtc = renderBarChart('rateChartEtc', rateChartEtc, labels, rates);
+    else if (categoryKey === '기타사업') rateChartEtc = renderBarChart('rateChartEtc', rateChartEtc, labels, rates);
   }
 
   function updateTotalMonthlyDashboard() {
     const allDetailRows = [
       ...detailStore['국책과제세부'],
       ...detailStore['일반용역세부'],
-      ...detailStore['기타용역세부']
+      ...detailStore['기타사업세부']
     ];
 
     const monthlySummary = {};
@@ -539,7 +539,7 @@
     const detailKeys = [
       { key: '국책과제세부', label: '국책과제', badge: 'badge-gov' },
       { key: '일반용역세부', label: '일반용역', badge: 'badge-gen' },
-      { key: '기타용역세부', label: '기타용역', badge: 'badge-etc' }
+      { key: '기타사업세부', label: '기타사업', badge: 'badge-etc' }
     ];
 
     const filteredRows = [];

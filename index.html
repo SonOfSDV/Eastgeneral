@@ -73,7 +73,7 @@
     .badge-etc { background-color: #fef3c7; color: #92400e; }
 
     /* 클릭 가능 링크 */
-    .project-link, .month-link {
+    .project-link, .month-link, .quarter-link {
       display: inline-block;
       color: #1e293b;
       font-weight: 600;
@@ -83,7 +83,7 @@
       cursor: pointer;
       transition: all 0.2s ease-in-out;
     }
-    .project-link:hover, .month-link:hover {
+    .project-link:hover, .month-link:hover, .quarter-link:hover {
       color: #2563eb;
       background-color: #f1f5f9;
       transform: translateY(-2px);
@@ -144,7 +144,7 @@
   <div class="nav-tabs">
     <button class="tab-btn active" onclick="switchPage('page-total', this)">📊 통합 월별 손익 현황</button>
     <button class="tab-btn" onclick="switchPage('page-gov', this)">🏛️ 국책과제 현황</button>
-    <button class="tab-btn" onclick="switchPage('page-gen', this)">💼 일반용역 현황</button>
+    <button class="tab-btn" onclick="switchPage('page-gen', this)">🏢 일반용역 현황</button>
     <button class="tab-btn" onclick="switchPage('page-etc', this)">🧩 기타사업 현황</button>
   </div>
 
@@ -166,12 +166,13 @@
     </div>
 
     <div class="card">
-      <h3>전체 월별 매입·매출 및 손익 추이 (세부 시트 기준)</h3>
+      <h3>전체 매입·매출 및 손익 추이</h3>
       <div class="chart-container"><canvas id="monthlyChart"></canvas></div>
     </div>
 
+    <!-- 월별 손익 상세 현황 -->
     <div class="card">
-      <h3>통합 월별 손익 상세 현황 <span style="font-size:13px; font-weight:normal; color:#64748b;">(월 이름을 클릭하면 상세 항목을 볼 수 있습니다)</span></h3>
+      <h3>월별 손익 상세 현황 <span style="font-size:13px; font-weight:normal; color:#64748b;">(월 이름을 클릭하면 상세 항목을 볼 수 있습니다)</span></h3>
       <table>
         <thead>
           <tr>
@@ -183,6 +184,25 @@
           </tr>
         </thead>
         <tbody id="monthlyTableBody">
+          <tr><td colspan="5" style="text-align:center; color:#a0aec0;">데이터를 불러오는 중입니다...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 추가된 부분: 분기별 손익 상세 현황 -->
+    <div class="card">
+      <h3>분기별 손익 상세 현황 <span style="font-size:13px; font-weight:normal; color:#64748b;">(분기 이름을 클릭하면 해당 분기의 월별 세부 내역을 볼 수 있습니다)</span></h3>
+      <table>
+        <thead>
+          <tr>
+            <th>분기</th>
+            <th class="number">매출액 (원)</th>
+            <th class="number">매입액 (원)</th>
+            <th class="number">영업손익 (원)</th>
+            <th class="number">이익률 (%)</th>
+          </tr>
+        </thead>
+        <tbody id="quarterlyTableBody">
           <tr><td colspan="5" style="text-align:center; color:#a0aec0;">데이터를 불러오는 중입니다...</td></tr>
         </tbody>
       </table>
@@ -332,6 +352,10 @@
     '기타사업세부': []
   };
 
+  // 전역 분기 데이터 보관함
+  let globalQuarterlySummary = {};
+  let globalMonthlySummary = {};
+
   function parseNum(val) {
     if (val === undefined || val === null || val === '') return 0;
     if (typeof val === 'number') return isNaN(val) ? 0 : val;
@@ -451,6 +475,13 @@
     ];
 
     const monthlySummary = {};
+    const quarterlySummary = {
+      '1분기': { sales: 0, purchase: 0, months: ['1월', '2월', '3월'] },
+      '2분기': { sales: 0, purchase: 0, months: ['4월', '5월', '6월'] },
+      '3분기': { sales: 0, purchase: 0, months: ['7월', '8월', '9월'] },
+      '4분기': { sales: 0, purchase: 0, months: ['10월', '11월', '12월'] }
+    };
+
     let grandSales = 0;
     let grandPurchase = 0;
 
@@ -462,7 +493,6 @@
       if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) return;
 
       const monthKey = `${monthNum}월`;
-
       const monthPurchase = parseNum(row['매입']);
       const monthSales = parseNum(row['매출']);
 
@@ -473,16 +503,29 @@
         monthlySummary[monthKey].sales += monthSales;
         monthlySummary[monthKey].purchase += monthPurchase;
 
+        // 분기별 집계
+        let qKey = '1분기';
+        if (monthNum >= 4 && monthNum <= 6) qKey = '2분기';
+        else if (monthNum >= 7 && monthNum <= 9) qKey = '3분기';
+        else if (monthNum >= 10 && monthNum <= 12) qKey = '4분기';
+
+        quarterlySummary[qKey].sales += monthSales;
+        quarterlySummary[qKey].purchase += monthPurchase;
+
         grandSales += monthSales;
         grandPurchase += monthPurchase;
       }
     });
+
+    globalMonthlySummary = monthlySummary;
+    globalQuarterlySummary = quarterlySummary;
 
     const grandProfit = grandSales - grandPurchase;
     document.getElementById('totalSales').innerText = grandSales.toLocaleString() + ' 원';
     document.getElementById('totalPurchase').innerText = grandPurchase.toLocaleString() + ' 원';
     document.getElementById('totalProfit').innerText = grandProfit.toLocaleString() + ' 원';
 
+    // 1. 월별 테이블 렌더링
     const monthlyTableBody = document.getElementById('monthlyTableBody');
     monthlyTableBody.innerHTML = '';
 
@@ -513,6 +556,48 @@
     if (months.length === 0) {
       monthlyTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#a0aec0;">세부 시트에서 집계할 수 있는 데이터가 없습니다.</td></tr>';
     }
+
+    // 2. 분기별 테이블 렌더링
+    const quarterlyTableBody = document.getElementById('quarterlyTableBody');
+    quarterlyTableBody.innerHTML = '';
+
+    const quarters = ['1분기', '2분기', '3분기', '4분기'];
+    let totalQS = 0, totalQP = 0;
+
+    quarters.forEach(q => {
+      const qData = quarterlySummary[q];
+      const s = qData.sales;
+      const p = qData.purchase;
+      const profit = s - p;
+      const margin = s > 0 ? ((profit / s) * 100).toFixed(1) : '0.0';
+
+      totalQS += s;
+      totalQP += p;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="quarter-link" onclick="openQuarterlyDetailModal('${q}')">${q}</span></td>
+        <td class="number">${s.toLocaleString()}</td>
+        <td class="number">${p.toLocaleString()}</td>
+        <td class="number" style="color:${profit >= 0 ? '#16a34a' : '#dc2626'}; font-weight:bold;">${profit.toLocaleString()}</td>
+        <td class="number">${margin}%</td>
+      `;
+      quarterlyTableBody.appendChild(tr);
+    });
+
+    // 분기 합계 행
+    const totalQProfit = totalQS - totalQP;
+    const totalQMargin = totalQS > 0 ? ((totalQProfit / totalQS) * 100).toFixed(1) : '0.0';
+    const totalQTr = document.createElement('tr');
+    totalQTr.className = 'total-row';
+    totalQTr.innerHTML = `
+      <td><b>연간 합계</b></td>
+      <td class="number">${totalQS.toLocaleString()}</td>
+      <td class="number">${totalQP.toLocaleString()}</td>
+      <td class="number" style="color:${totalQProfit >= 0 ? '#16a34a' : '#dc2626'};">${totalQProfit.toLocaleString()}</td>
+      <td class="number">${totalQMargin}%</td>
+    `;
+    quarterlyTableBody.appendChild(totalQTr);
 
     renderMonthlyChart(months, salesData, purchaseData, profitData);
   }
@@ -624,6 +709,83 @@
     detailTableBody.appendChild(totalTr);
 
     renderDetailPieChart(['매입액', '영업손익'], [totalPurchase, totalProfit > 0 ? totalProfit : 0]);
+    document.getElementById('detailModal').classList.add('active');
+  }
+
+  // 분기 상세 내역 모달 함수
+  function openQuarterlyDetailModal(quarterKey) {
+    const qData = globalQuarterlySummary[quarterKey];
+    if (!qData) return;
+
+    document.getElementById('modalProjectName').innerText = `${quarterKey} 월별 손익 구성 상세`;
+    document.getElementById('chartTitle').innerText = `${quarterKey} 매출 비중`;
+    document.getElementById('tableTitle').innerText = `${quarterKey} 월별 손익 집계 (원)`;
+
+    const modalTableHead = document.getElementById('modalTableHead');
+    const detailTableBody = document.getElementById('detailTableBody');
+    detailTableBody.innerHTML = '';
+
+    modalTableHead.innerHTML = `
+      <th>월</th>
+      <th class="number">매출액 (원)</th>
+      <th class="number">매입액 (원)</th>
+      <th class="number">영업손익 (원)</th>
+      <th class="number">이익률 (%)</th>
+    `;
+
+    const chartLabels = [];
+    const chartData = [];
+
+    let totalS = 0;
+    let totalP = 0;
+
+    qData.months.forEach(m => {
+      const monthData = globalMonthlySummary[m] || { sales: 0, purchase: 0 };
+      const s = monthData.sales;
+      const p = monthData.purchase;
+      const profit = s - p;
+      const margin = s > 0 ? ((profit / s) * 100).toFixed(1) : '0.0';
+
+      totalS += s;
+      totalP += p;
+
+      chartLabels.push(m);
+      chartData.push(s);
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><b>${m}</b></td>
+        <td class="number">${s.toLocaleString()}</td>
+        <td class="number">${p.toLocaleString()}</td>
+        <td class="number" style="color:${profit >= 0 ? '#16a34a' : '#dc2626'}; font-weight:bold;">${profit.toLocaleString()}</td>
+        <td class="number">${margin}%</td>
+      `;
+      detailTableBody.appendChild(tr);
+    });
+
+    const totalProfit = totalS - totalP;
+    const totalMargin = totalS > 0 ? ((totalProfit / totalS) * 100).toFixed(1) : '0.0';
+
+    document.getElementById('modalSummaryBox').innerHTML = `
+      <div><b>대상:</b> ${quarterKey} (${qData.months.join(', ')})</div>
+      <div><b>총 매출액:</b> <span style="color:#2563eb; font-weight:bold;">${totalS.toLocaleString()}</span> 원</div>
+      <div><b>총 매입액:</b> <span style="color:#dc2626; font-weight:bold;">${totalP.toLocaleString()}</span> 원</div>
+      <div><b>영업손익:</b> <span style="color:${totalProfit >= 0 ? '#16a34a' : '#dc2626'}; font-weight:bold;">${totalProfit.toLocaleString()}</span> 원</div>
+      <div><b>분기 평균 이익률:</b> ${totalMargin}%</div>
+    `;
+
+    const totalTr = document.createElement('tr');
+    totalTr.className = 'total-row';
+    totalTr.innerHTML = `
+      <td><b>${quarterKey} 합계</b></td>
+      <td class="number">${totalS.toLocaleString()}</td>
+      <td class="number">${totalP.toLocaleString()}</td>
+      <td class="number" style="color:${totalProfit >= 0 ? '#16a34a' : '#dc2626'};">${totalProfit.toLocaleString()}</td>
+      <td class="number">${totalMargin}%</td>
+    `;
+    detailTableBody.appendChild(totalTr);
+
+    renderDetailPieChart(chartLabels, chartData);
     document.getElementById('detailModal').classList.add('active');
   }
 

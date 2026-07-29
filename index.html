@@ -117,6 +117,19 @@
 
     .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
     .modal-chart-container { position: relative; height: 230px; }
+
+    /* 하단 푸터 스타일 */
+    footer {
+      text-align: center;
+      padding: 30px 10px 10px 10px;
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+    footer strong {
+      color: #334155;
+      font-weight: 700;
+    }
   </style>
 </head>
 <body>
@@ -257,6 +270,11 @@
     </div>
   </div>
 
+  <!-- 하단 안내 푸터 (날짜 자동 반영) -->
+  <footer>
+    본 대시보드는 과제별 Sheet에서 자동 연동됩니다 · 생성일 <span id="today-date"></span> · designed & built by <strong>대호</strong>
+  </footer>
+
 </div>
 
 <!-- 세부 내역 모달 팝업 -->
@@ -300,17 +318,14 @@
   let rateChartEtc = null;
   let detailPieChart = null;
 
-  // 전체 구글 시트 원본 데이터 (개별 과제 시트 포함)
   let globalDataStore = {};
 
-  // 1. 메인 시트 데이터 저장소 (국책과제, 일반용역, 기타용역)
   const categoryStore = {
     '국책과제': [],
     '일반용역': [],
     '기타용역': []
   };
 
-  // 2. 세부 시트 데이터 저장소 (국책과제세부, 일반용역세부, 기타용역세부)
   const detailStore = {
     '국책과제세부': [],
     '일반용역세부': [],
@@ -325,33 +340,38 @@
     return isNaN(num) ? 0 : num;
   }
 
-  // 데이터 로드
+  // 푸터 오늘 날짜 자동 설정
+  function setTodayDate() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    
+    const dateStr = `${year}-${month}-${day}`;
+    const dateEl = document.getElementById('today-date');
+    if (dateEl) dateEl.innerText = dateStr;
+  }
+
   async function fetchGoogleSheetData() {
     try {
       const response = await fetch(GAS_URL);
       const data = await response.json();
       
-      globalDataStore = data; // 전체 개별 시트 보관
+      globalDataStore = data;
 
-      // 메인 시트 데이터 할당
       categoryStore['국책과제'] = data['국책과제'] || [];
       categoryStore['일반용역'] = data['일반용역'] || [];
       categoryStore['기타용역'] = data['기타용역'] || [];
 
-      // 세부 시트 데이터 할당
       detailStore['국책과제세부'] = data['국책과제세부'] || [];
       detailStore['일반용역세부'] = data['일반용역세부'] || [];
       detailStore['기타용역세부'] = data['기타용역세부'] || [];
 
-      // 메인 시트 기반 페이지 렌더링
       renderCategoryPage('국책과제');
       renderCategoryPage('일반용역');
       renderCategoryPage('기타용역');
 
-      // 세부 시트 기반 통합 월별 손익 현황 계산 및 렌더링
       updateTotalMonthlyDashboard();
-
-      console.log("구글 시트 연동 데이터 완벽 로드됨", globalDataStore);
     } catch (error) {
       console.error("데이터 로드 실패:", error);
       alert("구글 시트 데이터를 불러오는 데 실패했습니다.");
@@ -371,7 +391,6 @@
     if (rateChartEtc) rateChartEtc.resize();
   }
 
-  // 메인 시트 기반 사업별 목록 및 차트 렌더링
   function renderCategoryPage(categoryKey) {
     const data = categoryStore[categoryKey];
     let tbodyId = '';
@@ -424,7 +443,6 @@
     else if (categoryKey === '기타용역') rateChartEtc = renderBarChart('rateChartEtc', rateChartEtc, labels, rates);
   }
 
-  // 통합 월별 손익 현황: [국책과제세부], [일반용역세부], [기타용역세부] 데이터를 활용하여 계산
   function updateTotalMonthlyDashboard() {
     const allDetailRows = [
       ...detailStore['국책과제세부'],
@@ -499,7 +517,6 @@
     renderMonthlyChart(months, salesData, purchaseData, profitData);
   }
 
-  // 사업 세부 내역 모달 열기
   function openDetailModal(categoryKey, index) {
     const row = categoryStore[categoryKey][index];
     if (!row) return;
@@ -511,7 +528,6 @@
     document.getElementById('detailModal').classList.add('active');
   }
 
-  // 월 클릭 시 세부 시트 항목 기반의 상세 모달
   function openMonthlyDetailModal(selectedMonth) {
     const monthNum = parseInt(String(selectedMonth).replace(/[^0-9]/g, ''), 10);
     const monthKey = `${monthNum}월`;
@@ -611,7 +627,6 @@
     document.getElementById('detailModal').classList.add('active');
   }
 
-  // ★ 국책과제 개별 시트 연동 모달 렌더링 함수
   function renderModalContent(projectName, row, categoryKey) {
     const modalTableHead = document.getElementById('modalTableHead');
     const detailTableBody = document.getElementById('detailTableBody');
@@ -621,7 +636,6 @@
     const chartData = [];
 
     if (categoryKey === '국책과제') {
-      // 1. 사업명과 완전히 일치하거나 포함하는 개별 시트 찾기
       let matchedSheetKey = Object.keys(globalDataStore).find(key => {
         const k = key.trim();
         const p = projectName.trim();
@@ -634,7 +648,6 @@
         document.getElementById('chartTitle').innerText = "비목별 예산 비중";
         document.getElementById('tableTitle').innerText = "비목별 세부 집행 현황 (원)";
 
-        // 헤더: 비목 항목 | 예산 | 소진액 | 잔액 | 집행률 | 비중
         modalTableHead.innerHTML = `
           <th>비목 항목</th>
           <th class="number">예산 (원)</th>
@@ -647,7 +660,6 @@
         let grandBudget = 0;
         let grandSpent = 0;
 
-        // 2. 총 예산 및 총 소진액 합계 집계
         projectSheetData.forEach(item => {
           const b = parseNum(item['예산'] || item['예산액'] || item['금액']);
           const s = parseNum(item['소진액'] || item['집행액'] || item['사용액']);
@@ -655,7 +667,6 @@
           grandSpent += s;
         });
 
-        // 3. 비목별 항목 계산 및 표 행 생성
         projectSheetData.forEach(itemRow => {
           const title = itemRow['비목 항목'] || itemRow['비목'] || itemRow['항목'] || '기타';
           const budget = parseNum(itemRow['예산'] || itemRow['예산액'] || itemRow['금액']);
@@ -682,7 +693,6 @@
           detailTableBody.appendChild(tr);
         });
 
-        // 4. 총계 행 생성
         const grandBalance = grandBudget - grandSpent;
         const grandRate = grandBudget > 0 ? ((grandSpent / grandBudget) * 100).toFixed(1) : '0.0';
 
@@ -698,7 +708,6 @@
         `;
         detailTableBody.appendChild(totalTr);
 
-        // 5. 요약 정보 박스 업데이트
         document.getElementById('modalSummaryBox').innerHTML = `
           <div><b>분류:</b> 국책과제</div>
           <div><b>사업명:</b> <span>${projectName}</span></div>
@@ -713,7 +722,6 @@
       }
 
     } else {
-      // 일반용역 및 기타용역 (대금 구분 현황)
       document.getElementById('chartTitle').innerText = "대금 구조 비율";
       document.getElementById('tableTitle').innerText = "대금 지급 구분 현황 (원)";
 
@@ -784,7 +792,6 @@
     if (event.target === modal) closeModal();
   }
 
-  // 차트 생성 및 업데이트
   function renderBarChart(canvasId, chartInstance, labels, rates) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     if (chartInstance) chartInstance.destroy();
@@ -854,6 +861,7 @@
   }
 
   window.addEventListener('DOMContentLoaded', () => {
+    setTodayDate();
     fetchGoogleSheetData();
   });
 </script>

@@ -37,6 +37,7 @@
       cursor: pointer;
       transition: all 0.2s ease;
       text-align: center;
+      white-space: nowrap;
     }
     .tab-btn:hover { background-color: #cbd5e1; }
     .tab-btn.active { background-color: #1b2a4a; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -44,9 +45,18 @@
     .page-content { display: none; }
     .page-content.active { display: block; }
 
-    .card { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; }
+    .card { 
+      background: white; 
+      padding: 24px; 
+      border-radius: 12px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+      margin-bottom: 20px; 
+      position: relative; 
+      display: flex;
+      flex-direction: column;
+    }
 
-    /* ★ 국책과제 상단 2열 그리드 레이아웃 (1.8 : 1) ★ */
+    /* 국책과제 상단 2열 그리드 레이아웃 (1.8 : 1) */
     .gov-grid-2col {
       display: grid;
       grid-template-columns: 1.8fr 1fr;
@@ -54,48 +64,50 @@
       margin-bottom: 20px;
     }
 
-    /* ★ 통합 월별/분기별 손익 상세 현황 1:1 2열 그리드 레이아웃 ★ */
-    .total-grid-2col {
+    /* 하단 1:1 2열 그리드 레이아웃 (차트 & 분기별 상세) */
+    .bottom-grid-2col {
       display: grid;
-      grid-template-columns: 1fr 1fr; /* 1:1 동등한 비율 */
+      grid-template-columns: 1fr 1fr; /* 1:1 비율 */
       gap: 20px;
       margin-bottom: 20px;
+      align-items: stretch; /* 좌우 카드 높이 균일 맞춤 */
     }
 
     /* 화면이 좁아지면 자동으로 1열 세로 정렬 */
     @media (max-width: 992px) {
       .gov-grid-2col,
-      .total-grid-2col {
+      .bottom-grid-2col {
         grid-template-columns: 1fr;
       }
     }
 
     /* 카드 헤더 공통 스타일 */
     .card-header-flex { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
-    .card-title-group h3 { margin: 0 0 4px 0; font-size: 18px; color: #1e293b; display: flex; align-items: center; gap: 6px; }
+    .card-title-group h3 { margin: 0 0 4px 0; font-size: 18px; color: #1e293b; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
     .card-title-group p { margin: 0; font-size: 13px; color: #64748b; }
 
     /* 요약 카드 그리드 (통합 손익용) */
     .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
     .kpi-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
-    .kpi-title { font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 6px; }
-    .kpi-value { font-size: 24px; font-weight: 800; }
+    .kpi-title { font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 6px; white-space: nowrap; }
+    .kpi-value { font-size: 24px; font-weight: 800; white-space: nowrap; }
     .text-blue { color: #2563eb; }
     .text-red { color: #dc2626; }
     .text-green { color: #16a34a; }
 
-    /* 차트 컨테이너 보완 (창 크기 조절 시 비율 깨짐 차단) */
+    /* 차트 컨테이너 스타일 - 비율 깨짐 방지 높이 지정 */
     .chart-container,
     .chart-container-tall,
     .chart-container-doughnut,
     .modal-chart-container {
       position: relative;
       width: 100%;
-      overflow: hidden;
+      flex: 1;
+      min-height: 320px;
     }
 
     .chart-container { height: 360px; }
-    .chart-container-tall { height: 500px; }
+    .chart-container-tall { height: 480px; }
     .chart-container-doughnut { height: 260px; }
     .modal-chart-container { height: 230px; }
 
@@ -108,23 +120,51 @@
       display: block;
     }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #edf2f7; vertical-align: middle; }
-    th { background-color: #f8fafc; color: #475569; font-weight: 600; font-size: 14px; }
+    /* 테이블 영역 및 스크롤 최적화 */
+    .table-scroll-container {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 380px; /* 테이블 과도한 확장 방지 */
+    }
+
+    /* 테이블 스타일 및 텍스트 줄바꿈 방지 */
+    table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+    th, td { 
+      padding: 12px 10px; 
+      text-align: left; 
+      border-bottom: 1px solid #edf2f7; 
+      vertical-align: middle; 
+      white-space: nowrap;
+    }
+    th { 
+      background-color: #f8fafc; 
+      color: #475569; 
+      font-weight: 600; 
+      font-size: 14px; 
+      position: sticky; 
+      top: 0; 
+      z-index: 5;
+    }
     td.number, th.number { text-align: right; }
     tr.total-row { background-color: #f1f5f9; font-weight: bold; }
 
-    /* 비목 목록 요약 리스트 스타일 (우측 도넛 하단) */
+    @media (max-width: 1200px) {
+      th, td { padding: 10px 6px; font-size: 13px; }
+      .kpi-value { font-size: 20px; }
+    }
+
+    /* 비목 목록 요약 리스트 스타일 */
     .category-list { list-style: none; padding: 0; margin: 20px 0 0 0; }
     .category-list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 4px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
     .category-list-item:last-child { border-bottom: none; }
-    .category-label { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #334155; }
+    .category-label { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #334155; white-space: nowrap; }
     .color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-    .category-value { font-weight: 700; color: #0f172a; }
-    .category-rate { font-size: 12px; color: #64748b; margin-left: 6px; }
+    .category-value { font-weight: 700; color: #0f172a; white-space: nowrap; }
+    .category-rate { font-size: 12px; color: #64748b; margin-left: 6px; white-space: nowrap; }
 
     /* 배지 스타일 */
-    .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; }
+    .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; white-space: nowrap; }
     .badge-normal { background-color: #c6f6d5; color: #22543d; }
     .badge-danger { background-color: #fed7d7; color: #742a2a; }
 
@@ -132,7 +172,6 @@
     .badge-gen { background-color: #dbeafe; color: #1e40af; }
     .badge-etc { background-color: #fef3c7; color: #92400e; }
 
-    /* 탭별 포인트 색상 정의 */
     .theme-gov-icon { color: #4f46e5; font-weight: bold; }
     .theme-gen-icon { color: #0284c7; font-weight: bold; }
     .theme-etc-icon { color: #d97706; font-weight: bold; }
@@ -143,10 +182,11 @@
       color: #1e293b;
       font-weight: 600;
       text-decoration: none;
-      padding: 6px 10px;
+      padding: 6px 8px;
       border-radius: 6px;
       cursor: pointer;
       transition: all 0.2s ease-in-out;
+      white-space: nowrap;
     }
     .project-link:hover, .month-link:hover, .quarter-link:hover {
       color: #2563eb;
@@ -214,6 +254,8 @@
 
   <!-- TAB 1: 통합 월별 손익 현황 -->
   <div id="page-total" class="page-content active">
+    
+    <!-- 1. KPI 카드 영역 -->
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-title">전체 총 매출액 (세부합산)</div>
@@ -229,47 +271,49 @@
       </div>
     </div>
 
-    <!-- 상단 차트 카드 -->
+    <!-- 2. 상단: 통합 월별 손익 상세 현황 (1열 전체 너비) -->
     <div class="card">
       <div class="card-header-flex">
         <div class="card-title-group">
-          <h3><span style="color:#1b2a4a;">▌</span> 전체 월별 매입·매출 및 손익 추이</h3>
-          <p>세부 시트 기준</p>
+          <h3><span style="color:#1b2a4a;">▌</span> 통합 월별 손익 상세 현황</h3>
+          <p>월 이름을 클릭하면 상세 항목을 볼 수 있습니다</p>
         </div>
       </div>
-      <div class="chart-container"><canvas id="monthlyChart"></canvas></div>
+      <div class="table-scroll-container">
+        <table>
+          <thead>
+            <tr>
+              <th>월</th>
+              <th class="number">매출액 (원)</th>
+              <th class="number">매입액 (원)</th>
+              <th class="number">영업손익 (원)</th>
+              <th class="number">이익률 (%)</th>
+            </tr>
+          </thead>
+          <tbody id="monthlyTableBody">
+            <tr><td colspan="5" style="text-align:center; color:#a0aec0;">데이터를 불러오는 중입니다...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- ★ [개편] 하단 테이블 2개를 좌우 1:1 그리드 구조로 변경 ★ -->
-    <div class="total-grid-2col">
+    <!-- 3. 하단: 1:1 2열 그리드 (차트 & 분기별 상세) -->
+    <div class="bottom-grid-2col">
       
-      <!-- [좌측 카드] 통합 월별 손익 상세 현황 -->
+      <!-- [좌측 카드] 전체 월별 매입·매출 및 손익 추이 (차트) -->
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header-flex">
           <div class="card-title-group">
-            <h3><span style="color:#1b2a4a;">▌</span> 통합 월별 손익 상세 현황</h3>
-            <p>월 이름을 클릭하면 상세 항목을 볼 수 있습니다</p>
+            <h3><span style="color:#1b2a4a;">▌</span> 전체 월별 매입·매출 및 손익 추이</h3>
+            <p>세부 시트 기준 (1월 ~ 12월)</p>
           </div>
         </div>
-        <div style="overflow-x: auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>월</th>
-                <th class="number">매출액 (원)</th>
-                <th class="number">매입액 (원)</th>
-                <th class="number">영업손익 (원)</th>
-                <th class="number">이익률 (%)</th>
-              </tr>
-            </thead>
-            <tbody id="monthlyTableBody">
-              <tr><td colspan="5" style="text-align:center; color:#a0aec0;">데이터를 불러오는 중입니다...</td></tr>
-            </tbody>
-          </table>
+        <div class="chart-container">
+          <canvas id="monthlyChart"></canvas>
         </div>
       </div>
 
-      <!-- [우측 카드] 분기별 손익 상세 현황 -->
+      <!-- [우측 카드] 분기별 손익 상세 현황 (표) -->
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header-flex">
           <div class="card-title-group">
@@ -277,7 +321,7 @@
             <p>분기 이름을 클릭하면 해당 분기의 월별 세부 내역을 볼 수 있습니다</p>
           </div>
         </div>
-        <div style="overflow-x: auto;">
+        <div class="table-scroll-container">
           <table>
             <thead>
               <tr>
@@ -302,7 +346,6 @@
   <!-- TAB 2: 국책과제 현황 -->
   <div id="page-gov" class="page-content">
     <div class="gov-grid-2col">
-      <!-- 좌측 카드: 과제별 집행률 -->
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header-flex">
           <div class="card-title-group">
@@ -315,7 +358,6 @@
         </div>
       </div>
 
-      <!-- 우측 카드: 비목별 예산 배분 -->
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header-flex">
           <div class="card-title-group">
@@ -339,21 +381,23 @@
           <p>전체 과제 수행 목록</p>
         </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>사업명</th>
-            <th class="number">예산 (원)</th>
-            <th class="number">집행액 (원)</th>
-            <th class="number">잔액 (원)</th>
-            <th class="number">집행률 (%)</th>
-            <th style="text-align: center;">상태</th>
-          </tr>
-        </thead>
-        <tbody id="tableGov">
-          <tr><td colspan="6" style="text-align:center; color:#a0aec0;">등록된 국책과제 데이터가 없습니다.</td></tr>
-        </tbody>
-      </table>
+      <div class="table-scroll-container">
+        <table>
+          <thead>
+            <tr>
+              <th>사업명</th>
+              <th class="number">예산 (원)</th>
+              <th class="number">집행액 (원)</th>
+              <th class="number">잔액 (원)</th>
+              <th class="number">집행률 (%)</th>
+              <th style="text-align: center;">상태</th>
+            </tr>
+          </thead>
+          <tbody id="tableGov">
+            <tr><td colspan="6" style="text-align:center; color:#a0aec0;">등록된 국책과제 데이터가 없습니다.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -376,21 +420,23 @@
           <p>전체 일반용역 수행 목록</p>
         </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>사업명</th>
-            <th class="number">예산 (원)</th>
-            <th class="number">집행액 (원)</th>
-            <th class="number">잔액 (원)</th>
-            <th class="number">집행률 (%)</th>
-            <th style="text-align: center;">상태</th>
-          </tr>
-        </thead>
-        <tbody id="tableGen">
-          <tr><td colspan="6" style="text-align:center; color:#a0aec0;">등록된 일반용역 데이터가 없습니다.</td></tr>
-        </tbody>
-      </table>
+      <div class="table-scroll-container">
+        <table>
+          <thead>
+            <tr>
+              <th>사업명</th>
+              <th class="number">예산 (원)</th>
+              <th class="number">집행액 (원)</th>
+              <th class="number">잔액 (원)</th>
+              <th class="number">집행률 (%)</th>
+              <th style="text-align: center;">상태</th>
+            </tr>
+          </thead>
+          <tbody id="tableGen">
+            <tr><td colspan="6" style="text-align:center; color:#a0aec0;">등록된 일반용역 데이터가 없습니다.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -413,21 +459,23 @@
           <p>전체 기타사업 수행 목록</p>
         </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>사업명</th>
-            <th class="number">예산 (원)</th>
-            <th class="number">집행액 (원)</th>
-            <th class="number">잔액 (원)</th>
-            <th class="number">집행률 (%)</th>
-            <th style="text-align: center;">상태</th>
-          </tr>
-        </thead>
-        <tbody id="tableEtc">
-          <tr><td colspan="6" style="text-align:center; color:#a0aec0;">등록된 기타사업 데이터가 없습니다.</td></tr>
-        </tbody>
-      </table>
+      <div class="table-scroll-container">
+        <table>
+          <thead>
+            <tr>
+              <th>사업명</th>
+              <th class="number">예산 (원)</th>
+              <th class="number">집행액 (원)</th>
+              <th class="number">잔액 (원)</th>
+              <th class="number">집행률 (%)</th>
+              <th style="text-align: center;">상태</th>
+            </tr>
+          </thead>
+          <tbody id="tableEtc">
+            <tr><td colspan="6" style="text-align:center; color:#a0aec0;">등록된 기타사업 데이터가 없습니다.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -460,12 +508,14 @@
     </div>
 
     <h4 id="tableTitle">세부 집행 현황 (원)</h4>
-    <table>
-      <thead>
-        <tr id="modalTableHead"></tr>
-      </thead>
-      <tbody id="detailTableBody"></tbody>
-    </table>
+    <div class="table-scroll-container">
+      <table>
+        <thead>
+          <tr id="modalTableHead"></tr>
+        </thead>
+        <tbody id="detailTableBody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -553,7 +603,6 @@
     document.getElementById(pageId).classList.add('active');
     btnElement.classList.add('active');
 
-    // 탭 전환 시 차트 리사이즈
     setTimeout(() => {
       if (monthlyChart) monthlyChart.resize();
       if (rateChartGov) rateChartGov.resize();
@@ -808,7 +857,12 @@
       ...detailStore['기타사업세부']
     ];
 
+    // 1월부터 12월까지 기본 객체 생성 (데이터가 없어도 12개월 모두 표시)
     const monthlySummary = {};
+    for (let i = 1; i <= 12; i++) {
+      monthlySummary[`${i}월`] = { sales: 0, purchase: 0 };
+    }
+
     const quarterlySummary = {
       '1분기': { sales: 0, purchase: 0, months: ['1월', '2월', '3월'] },
       '2분기': { sales: 0, purchase: 0, months: ['4월', '5월', '6월'] },
@@ -830,24 +884,19 @@
       const monthPurchase = parseNum(row['매입']);
       const monthSales = parseNum(row['매출']);
 
-      if (monthSales > 0 || monthPurchase > 0) {
-        if (!monthlySummary[monthKey]) {
-          monthlySummary[monthKey] = { sales: 0, purchase: 0 };
-        }
-        monthlySummary[monthKey].sales += monthSales;
-        monthlySummary[monthKey].purchase += monthPurchase;
+      monthlySummary[monthKey].sales += monthSales;
+      monthlySummary[monthKey].purchase += monthPurchase;
 
-        let qKey = '1분기';
-        if (monthNum >= 4 && monthNum <= 6) qKey = '2분기';
-        else if (monthNum >= 7 && monthNum <= 9) qKey = '3분기';
-        else if (monthNum >= 10 && monthNum <= 12) qKey = '4분기';
+      let qKey = '1분기';
+      if (monthNum >= 4 && monthNum <= 6) qKey = '2분기';
+      else if (monthNum >= 7 && monthNum <= 9) qKey = '3분기';
+      else if (monthNum >= 10 && monthNum <= 12) qKey = '4분기';
 
-        quarterlySummary[qKey].sales += monthSales;
-        quarterlySummary[qKey].purchase += monthPurchase;
+      quarterlySummary[qKey].sales += monthSales;
+      quarterlySummary[qKey].purchase += monthPurchase;
 
-        grandSales += monthSales;
-        grandPurchase += monthPurchase;
-      }
+      grandSales += monthSales;
+      grandPurchase += monthPurchase;
     });
 
     globalMonthlySummary = monthlySummary;
@@ -861,7 +910,8 @@
     const monthlyTableBody = document.getElementById('monthlyTableBody');
     monthlyTableBody.innerHTML = '';
 
-    const months = Object.keys(monthlySummary).sort((a, b) => parseInt(a) - parseInt(b));
+    // 1월 ~ 12월 차례로 라벨 및 데이터 세팅
+    const months = Array.from({ length: 12 }, (_, i) => `${i + 1}월`);
     const salesData = [], purchaseData = [], profitData = [];
 
     months.forEach(m => {
@@ -884,10 +934,6 @@
       `;
       monthlyTableBody.appendChild(tr);
     });
-
-    if (months.length === 0) {
-      monthlyTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#a0aec0;">세부 시트에서 집계할 수 있는 데이터가 없습니다.</td></tr>';
-    }
 
     const quarterlyTableBody = document.getElementById('quarterlyTableBody');
     quarterlyTableBody.innerHTML = '';
@@ -1330,6 +1376,7 @@
     });
   }
 
+  /* 12개월 통합 월별 손익 차트 옵션 최적화 */
   function renderMonthlyChart(months, sales, purchases, profits) {
     const ctx = document.getElementById('monthlyChart').getContext('2d');
     if (monthlyChart) monthlyChart.destroy();
@@ -1339,22 +1386,40 @@
       data: {
         labels: months,
         datasets: [
-          { type: 'line', label: '영업손익', data: profits, borderColor: '#16a34a', backgroundColor: '#16a34a', borderWidth: 3, fill: false },
-          { label: '매출액', data: sales, backgroundColor: '#93c5fd', borderRadius: 4 },
-          { label: '매입액', data: purchases, backgroundColor: '#fca5a5', borderRadius: 4 }
+          { type: 'line', label: '영업손익', data: profits, borderColor: '#16a34a', backgroundColor: '#16a34a', borderWidth: 2.5, pointRadius: 3, fill: false },
+          { label: '매출액', data: sales, backgroundColor: '#93c5fd', borderRadius: 3, categoryPercentage: 0.7, barPercentage: 0.8 },
+          { label: '매입액', data: purchases, backgroundColor: '#fca5a5', borderRadius: 3, categoryPercentage: 0.7, barPercentage: 0.8 }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         resizeDelay: 200,
-        plugins: { legend: { position: 'top' } },
-        scales: { y: { beginAtZero: true } }
+        plugins: { 
+          legend: { 
+            position: 'top',
+            labels: { boxWidth: 12, padding: 10, font: { size: 12 } }
+          } 
+        },
+        scales: { 
+          x: {
+            grid: { display: false },
+            ticks: {
+              autoSkip: false, // 12개월 눈금 생략 없이 전체 표시
+              maxRotation: 0,  // 글자 회전 방지
+              font: { size: 11 }
+            }
+          },
+          y: { 
+            beginAtZero: true,
+            ticks: { font: { size: 11 } }
+          } 
+        }
       }
     });
   }
 
-  /* ★ 리사이즈 디바운스 이벤트 (창 크기 조절 시 비율 및 차트 깨짐 완벽 방지) ★ */
+  /* 창 크기 변경 시 차트 재조정 이벤트 디바운싱 */
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);

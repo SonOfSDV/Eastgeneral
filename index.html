@@ -802,7 +802,7 @@
     const govProjects = categoryStore['국책과제'] || [];
     const categoryTotals = {};
 
-    const defaultOrder = ['인건비', '연구수당', '장비비', '재료비', '연구활동비', '간접비'];
+    const defaultOrder = ['인건비', '장비비', '재료비', '연구활동비', '연구수당', '간접비'];
     defaultOrder.forEach(cat => { categoryTotals[cat] = { budget: 0, spent: 0 }; });
 
     govProjects.forEach(proj => {

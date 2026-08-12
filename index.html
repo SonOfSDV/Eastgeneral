@@ -311,7 +311,7 @@
 <div class="container">
   <header>
     <h1>EAST 총괄 관리 시스템</h1>
-    <p>월별 매입 매출 관리 보드</p>
+    <p>매입 매출 관리 </p>
   </header>
 
   <!-- 탭 네비게이션 -->
@@ -421,7 +421,7 @@
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header-flex">
           <div class="card-title-group">
-            <h3><span class="theme-gov-icon">▌</span> 과제별 직접비 집행률</h3>
+            <h3><span class="theme-gov-icon">▌</span> 과제별 집행률</h3>
             <p>집행률 높은 순 · 정산 기준 80%</p>
           </div>
         </div>
@@ -739,7 +739,7 @@
       listData.push({ name, budget, executed, balance, rate, index, rawData: row });
     });
 
-    if (categoryKey === '국책과제') {
+    if (categoryKey === '국책과제' || categoryKey === '일반용역') {
       listData.sort((a, b) => b.rate - a.rate);
     }
 
@@ -1416,7 +1416,7 @@
       `;
       detailTableBody.appendChild(totalTr);
 
-      const totalExecuted = parseNum(row['집행액']);
+      const totalExecuted = parseNum(row['집행률'] ? parseNum(row['집행액']) : row['집행액']);
       const totalBalance = totalBudget - totalExecuted;
       const totalRate = totalBudget > 0 ? ((totalExecuted / totalBudget) * 100).toFixed(1) : 0;
 

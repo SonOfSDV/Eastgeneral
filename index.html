@@ -69,7 +69,8 @@
     }
 
     /* 하단 1:1 2열 그리드 레이아웃 */
-    .bottom-grid-2col {
+    .bottom-grid-2col,
+    .etc-grid-2col {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 20px;
@@ -79,7 +80,8 @@
 
     @media (max-width: 992px) {
       .gov-grid-2col,
-      .bottom-grid-2col {
+      .bottom-grid-2col,
+      .etc-grid-2col {
         grid-template-columns: 1fr;
       }
     }
@@ -137,8 +139,7 @@
     /* 차트 컨테이너 스타일 */
     .chart-container,
     .chart-container-tall,
-    .chart-container-doughnut,
-    .modal-chart-container {
+    .chart-container-doughnut {
       position: relative;
       width: 100%;
       flex: 1;
@@ -148,12 +149,10 @@
     .chart-container { height: 360px; }
     .chart-container-tall { height: 480px; }
     .chart-container-doughnut { height: 260px; }
-    .modal-chart-container { height: 230px; }
 
     .chart-container canvas,
     .chart-container-tall canvas,
-    .chart-container-doughnut canvas,
-    .modal-chart-container canvas {
+    .chart-container-doughnut canvas {
       width: 100% !important;
       height: 100% !important;
       display: block;
@@ -259,18 +258,17 @@
     .modal-header h2 { margin: 0; font-size: 20px; color: #1b2a4a; }
     .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #a0aec0; }
 
-    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
-
-    /* 모달 요약 박스 깔끔한 라인 정렬 CSS */
+    /* 모달 요약 박스 스타일 (전체 너비 활용) */
     .summary-box {
       background: #f8fafc;
       padding: 16px 20px;
       border-radius: 8px;
       font-size: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px 24px;
       border: 1px solid #e2e8f0;
+      margin-bottom: 20px;
     }
     .summary-item {
       display: flex;
@@ -278,10 +276,6 @@
       align-items: center;
       border-bottom: 1px dashed #e2e8f0;
       padding-bottom: 6px;
-    }
-    .summary-item:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
     }
     .summary-label {
       font-weight: 600;
@@ -514,39 +508,38 @@
 
   <!-- TAB 4: 기타사업 현황 -->
   <div id="page-etc" class="page-content">
-    <div class="card">
-      <div class="card-header-flex">
-        <div class="card-title-group">
-          <h3><span class="theme-etc-icon">▌</span> 기타사업 사업별 집행률</h3>
-          <p>사업별 집행 달성도 (%)</p>
+    <div class="etc-grid-2col">
+      <div class="card" style="margin-bottom: 0;">
+        <div class="card-header-flex">
+          <div class="card-title-group">
+            <h3><span class="theme-etc-icon">▌</span> 월별 기타사업 지출(매입) 현황</h3>
+            <p>선택 연도 기준 기타사업 월별 지출(매입) 추이</p>
+          </div>
         </div>
+        <div class="chart-container"><canvas id="rateChartEtc"></canvas></div>
       </div>
-      <div class="chart-container"><canvas id="rateChartEtc"></canvas></div>
-    </div>
 
-    <div class="card">
-      <div class="card-header-flex">
-        <div class="card-title-group">
-          <h3><span class="theme-etc-icon">▌</span> 기타사업 상세 목록</h3>
-          <p>전체 기타사업 수행 목록</p>
+      <div class="card" style="margin-bottom: 0;">
+        <div class="card-header-flex">
+          <div class="card-title-group">
+            <h3><span class="theme-etc-icon">▌</span> 기타사업 상세 목록</h3>
+            <p>전체 기타사업 수행 목록 (비중 순 정렬)</p>
+          </div>
         </div>
-      </div>
-      <div class="table-scroll-container">
-        <table>
-          <thead>
-            <tr>
-              <th>사업명</th>
-              <th class="number">예산 (원)</th>
-              <th class="number">집행액 (원)</th>
-              <th class="number">잔액 (원)</th>
-              <th class="number">집행률 (%)</th>
-              <th style="text-align: center;">상태</th>
-            </tr>
-          </thead>
-          <tbody id="tableEtc">
-            <tr><td colspan="6" style="text-align:center; color:#a0aec0;">등록된 기타사업 데이터가 없습니다.</td></tr>
-          </tbody>
-        </table>
+        <div class="table-scroll-container">
+          <table>
+            <thead>
+              <tr>
+                <th>비목</th>
+                <th class="number">지출액 (원)</th>
+                <th class="number">항목 비중 (%)</th>
+              </tr>
+            </thead>
+            <tbody id="tableEtc">
+              <tr><td colspan="3" style="text-align:center; color:#a0aec0;">등록된 기타사업 데이터가 없습니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -565,21 +558,12 @@
       <button class="close-btn" onclick="closeModal()">&times;</button>
     </div>
 
-    <div class="modal-grid">
-      <div>
-        <h4 id="chartTitle" style="margin-top:0;">비목/월별 집행 비중</h4>
-        <div class="modal-chart-container">
-          <canvas id="detailPieChart"></canvas>
-        </div>
-      </div>
-      <div>
-        <h4 style="margin-top:0;">요약 정보</h4>
-        <div class="summary-box" id="modalSummaryBox">
-        </div>
-      </div>
+    <!-- 원형 그래프 제거 및 요약 박스 중심 레이아웃 수정 -->
+    <h4 style="margin-top:0; margin-bottom:10px;">요약 정보</h4>
+    <div class="summary-box" id="modalSummaryBox">
     </div>
 
-    <h4 id="tableTitle">세부 집행 현황 (원)</h4>
+    <h4 id="tableTitle" style="margin-top:15px;">세부 집행 현황 (원)</h4>
     <div class="table-scroll-container">
       <table>
         <thead>
@@ -599,7 +583,6 @@
   let rateChartGen = null;
   let rateChartEtc = null;
   let govCategoryChart = null;
-  let detailPieChart = null;
 
   let globalDataStore = {};
   let selectedYear = "";
@@ -690,12 +673,16 @@
 
     selectedYear = yearList[0];
     updateTotalMonthlyDashboard();
+    renderEtcMonthlyChart();
+    renderCategoryPage('기타사업');
   }
 
   function onYearChange() {
     const yearSelect = document.getElementById('yearSelect');
     selectedYear = yearSelect.value;
     updateTotalMonthlyDashboard();
+    renderEtcMonthlyChart();
+    renderCategoryPage('기타사업');
   }
 
   function switchPage(pageId, btnElement) {
@@ -727,6 +714,36 @@
 
     const listData = [];
 
+    if (categoryKey === '기타사업') {
+      let totalEtcSpent = 0;
+      data.forEach((row, index) => {
+        const name = row['사업명'] || row['프로젝트명'] || row['비목'] || row['항목명'] || null;
+        if (!name) return;
+        const executed = parseNum(row['집행액']);
+        totalEtcSpent += executed;
+        listData.push({ name, executed, index, rawData: row });
+      });
+
+      // 비중(지출액) 내림차순 정렬
+      listData.sort((a, b) => b.executed - a.executed);
+
+      listData.forEach(item => {
+        const ratio = totalEtcSpent > 0 ? ((item.executed / totalEtcSpent) * 100).toFixed(1) : '0.0';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="project-link" onclick="openDetailModal('${categoryKey}', ${item.index})">${item.name}</span></td>
+          <td class="number">${item.executed.toLocaleString()}</td>
+          <td class="number">${ratio}%</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      if (listData.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#a0aec0;">등록된 기타사업 데이터가 없습니다.</td></tr>`;
+      }
+      return;
+    }
+
     data.forEach((row, index) => {
       const name = row['사업명'] || row['프로젝트명'] || null;
       if (!name) return;
@@ -739,9 +756,7 @@
       listData.push({ name, budget, executed, balance, rate, index, rawData: row });
     });
 
-    if (categoryKey === '국책과제' || categoryKey === '일반용역') {
-      listData.sort((a, b) => b.rate - a.rate);
-    }
+    listData.sort((a, b) => b.rate - a.rate);
 
     const labels = [];
     const rates = [];
@@ -776,9 +791,63 @@
       renderHorizontalBarChart('rateChartGov', labels, rates);
     } else if (categoryKey === '일반용역') {
       rateChartGen = renderBarChart('rateChartGen', rateChartGen, labels, rates, '#0284c7');
-    } else if (categoryKey === '기타사업') {
-      rateChartEtc = renderBarChart('rateChartEtc', rateChartEtc, labels, rates, '#d97706');
     }
+  }
+
+  function renderEtcMonthlyChart() {
+    const etcDetails = detailStore['기타사업세부'] || [];
+    const monthlyPurchase = Array(12).fill(0);
+
+    etcDetails.forEach(row => {
+      let yVal = row['년도'] || row['연도'] || row['Year'];
+      if (yVal) {
+        let cleanYear = String(yVal).replace(/[^0-9]/g, '');
+        if (selectedYear && cleanYear !== selectedYear) return;
+      }
+
+      let mVal = row['월'];
+      if (mVal === undefined || mVal === null || mVal === '') return;
+      let monthNum = parseInt(String(mVal).replace(/[^0-9]/g, ''), 10);
+      if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) return;
+
+      monthlyPurchase[monthNum - 1] += parseNum(row['매입']);
+    });
+
+    const months = Array.from({ length: 12 }, (_, i) => `${i + 1}월`);
+    const ctx = document.getElementById('rateChartEtc').getContext('2d');
+    if (rateChartEtc) rateChartEtc.destroy();
+
+    rateChartEtc = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [
+          {
+            label: '기타사업 지출(매입)',
+            data: monthlyPurchase,
+            backgroundColor: '#f59e0b',
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        resizeDelay: 200,
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: (context) => ` ${context.dataset.label}: ${context.parsed.y.toLocaleString()} 원`
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true }
+        }
+      }
+    });
   }
 
   function renderHorizontalBarChart(canvasId, labels, rates) {
@@ -1081,7 +1150,7 @@
     const row = categoryStore[categoryKey][index];
     if (!row) return;
 
-    const name = row['사업명'] || row['프로젝트명'] || '사업 상세';
+    const name = row['사업명'] || row['프로젝트명'] || row['비목'] || row['항목명'] || '사업 상세';
     document.getElementById('modalProjectName').innerText = `${categoryKey} - ${name}`;
 
     renderModalContent(name, row, categoryKey);
@@ -1093,7 +1162,6 @@
     const monthKey = `${monthNum}월`;
 
     document.getElementById('modalProjectName').innerText = `${selectedYear}년 ${monthKey} 세부 사업별 매입·매출 상세`;
-    document.getElementById('chartTitle').innerText = `${monthKey} 손익 구조`;
     document.getElementById('tableTitle').innerText = `${monthKey} 세부 항목별 금액 (원)`;
 
     const detailKeys = [
@@ -1149,7 +1217,7 @@
     `;
 
     filteredRows.forEach(row => {
-      const name = row['사업명'] || row['프로젝트명'] || row['항목명'] || '-';
+      const name = row['사업명'] || row['프로젝트명'] || row['항목명'] || row['비목'] || '-';
       const sales = row._mSales;
       const purchase = row._mPurchase;
       const profit = sales - purchase;
@@ -1190,7 +1258,6 @@
     `;
     detailTableBody.appendChild(totalTr);
 
-    renderDetailPieChart(['매입액', '영업손익'], [totalPurchase, totalProfit > 0 ? totalProfit : 0]);
     document.getElementById('detailModal').classList.add('active');
   }
 
@@ -1199,7 +1266,6 @@
     if (!qData) return;
 
     document.getElementById('modalProjectName').innerText = `${selectedYear}년 ${quarterKey} 월별 손익 구성 상세`;
-    document.getElementById('chartTitle').innerText = `${quarterKey} 매출 비중`;
     document.getElementById('tableTitle').innerText = `${quarterKey} 월별 손익 집계 (원)`;
 
     const modalTableHead = document.getElementById('modalTableHead');
@@ -1214,9 +1280,6 @@
       <th class="number">이익률 (%)</th>
     `;
 
-    const chartLabels = [];
-    const chartData = [];
-
     let totalS = 0;
     let totalP = 0;
 
@@ -1229,9 +1292,6 @@
 
       totalS += s;
       totalP += p;
-
-      chartLabels.push(m);
-      chartData.push(s);
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -1267,7 +1327,6 @@
     `;
     detailTableBody.appendChild(totalTr);
 
-    renderDetailPieChart(chartLabels, chartData);
     document.getElementById('detailModal').classList.add('active');
   }
 
@@ -1276,13 +1335,88 @@
     const detailTableBody = document.getElementById('detailTableBody');
     detailTableBody.innerHTML = '';
 
-    const chartLabels = [];
-    const chartData = [];
-
     const period = row['사업기간'] || row['과제기간'] || row['기간'] || '-';
-    const manager = row['책임자'] || row['총괄책임자'] || row['책임자'] || '-';
+    const manager = row['책임자'] || row['총괄책임자'] || '-';
 
-    if (categoryKey === '국책과제') {
+    if (categoryKey === '기타사업') {
+      document.getElementById('tableTitle').innerText = "월별 세부 지출/매출 현황 (원)";
+
+      modalTableHead.innerHTML = `
+        <th>월</th>
+        <th class="number">지출액/매입액 (원)</th>
+        <th class="number">매출액 (원)</th>
+        <th class="number">손익 (원)</th>
+      `;
+
+      const monthlyDataMap = {};
+      for (let i = 1; i <= 12; i++) {
+        monthlyDataMap[`${i}월`] = { purchase: 0, sales: 0 };
+      }
+
+      const etcDetails = detailStore['기타사업세부'] || [];
+      etcDetails.forEach(item => {
+        const itemProj = item['사업명'] || item['프로젝트명'] || item['항목명'] || item['비목'] || '';
+        if (itemProj.trim() === projectName.trim() || itemProj.includes(projectName) || projectName.includes(itemProj)) {
+          let yVal = item['년도'] || item['연도'] || item['Year'];
+          if (yVal) {
+            let cleanYear = String(yVal).replace(/[^0-9]/g, '');
+            if (selectedYear && cleanYear !== selectedYear) return;
+          }
+
+          let mVal = item['월'];
+          if (mVal === undefined || mVal === null || mVal === '') return;
+          let mNum = parseInt(String(mVal).replace(/[^0-9]/g, ''), 10);
+          if (mNum >= 1 && mNum <= 12) {
+            monthlyDataMap[`${mNum}월`].purchase += parseNum(item['매입']);
+            monthlyDataMap[`${mNum}월`].sales += parseNum(item['매출']);
+          }
+        }
+      });
+
+      let totalPurchase = 0;
+      let totalSales = 0;
+
+      for (let i = 1; i <= 12; i++) {
+        const mKey = `${i}월`;
+        const p = monthlyDataMap[mKey].purchase;
+        const s = monthlyDataMap[mKey].sales;
+        const profit = s - p;
+
+        totalPurchase += p;
+        totalSales += s;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${mKey}</b></td>
+          <td class="number">${p.toLocaleString()}</td>
+          <td class="number">${s.toLocaleString()}</td>
+          <td class="number" style="color:${profit >= 0 ? '#16a34a' : '#dc2626'}; font-weight:bold;">${profit.toLocaleString()}</td>
+        `;
+        detailTableBody.appendChild(tr);
+      }
+
+      const grandProfit = totalSales - totalPurchase;
+
+      const totalTr = document.createElement('tr');
+      totalTr.className = 'total-row';
+      totalTr.innerHTML = `
+        <td><b>연간 합계</b></td>
+        <td class="number">${totalPurchase.toLocaleString()}</td>
+        <td class="number">${totalSales.toLocaleString()}</td>
+        <td class="number" style="color:${grandProfit >= 0 ? '#16a34a' : '#dc2626'};">${grandProfit.toLocaleString()}</td>
+      `;
+      detailTableBody.appendChild(totalTr);
+
+      document.getElementById('modalSummaryBox').innerHTML = `
+        <div class="summary-item"><span class="summary-label">분류</span><span class="summary-value">기타사업</span></div>
+        <div class="summary-item"><span class="summary-label">비목</span><span class="summary-value">${projectName}</span></div>
+        <div class="summary-item"><span class="summary-label">조회 연도</span><span class="summary-value">${selectedYear}년</span></div>
+        <div class="summary-item"><span class="summary-label">총 지출액</span><span class="summary-value" style="color:#dc2626;">${totalPurchase.toLocaleString()} 원</span></div>
+        <div class="summary-item"><span class="summary-label">총 매출액</span><span class="summary-value" style="color:#2563eb;">${totalSales.toLocaleString()} 원</span></div>
+        <div class="summary-item"><span class="summary-label">영업손익</span><span class="summary-value" style="color:${grandProfit >= 0 ? '#16a34a' : '#dc2626'};">${grandProfit.toLocaleString()} 원</span></div>
+      `;
+
+    } else if (categoryKey === '국책과제') {
       let matchedSheetKey = Object.keys(globalDataStore).find(key => {
         const k = key.trim();
         const p = projectName.trim();
@@ -1292,7 +1426,6 @@
       const projectSheetData = matchedSheetKey ? globalDataStore[matchedSheetKey] : null;
 
       if (projectSheetData && projectSheetData.length > 0) {
-        document.getElementById('chartTitle').innerText = "비목별 예산 비중";
         document.getElementById('tableTitle').innerText = "비목별 세부 집행 현황 (원)";
 
         modalTableHead.innerHTML = `
@@ -1323,11 +1456,6 @@
           const executeRate = budget > 0 ? ((spent / budget) * 100).toFixed(1) : '0.0';
           const ratio = grandBudget > 0 ? ((budget / grandBudget) * 100).toFixed(1) : '0.0';
 
-          if (title) {
-            chartLabels.push(title);
-            chartData.push(budget);
-          }
-
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td><b>${title}</b></td>
@@ -1355,7 +1483,6 @@
         `;
         detailTableBody.appendChild(totalTr);
 
-        /* 연동 시트 제거 및 양쪽 끝 정렬 레이아웃 반영 */
         document.getElementById('modalSummaryBox').innerHTML = `
           <div class="summary-item"><span class="summary-label">분류</span><span class="summary-value">국책과제</span></div>
           <div class="summary-item"><span class="summary-label">사업명</span><span class="summary-value">${projectName}</span></div>
@@ -1371,7 +1498,6 @@
       }
 
     } else {
-      document.getElementById('chartTitle').innerText = "대금 구조 비율";
       document.getElementById('tableTitle').innerText = "대금 지급 구분 현황 (원)";
 
       modalTableHead.innerHTML = `
@@ -1394,9 +1520,6 @@
         sumVal += item.val;
         const ratio = totalBudget > 0 ? ((item.val / totalBudget) * 100).toFixed(1) : 0;
 
-        chartLabels.push(item.name);
-        chartData.push(item.val);
-
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><b>${item.name}</b></td>
@@ -1418,7 +1541,6 @@
 
       const totalExecuted = parseNum(row['집행률'] ? parseNum(row['집행액']) : row['집행액']);
       const totalBalance = totalBudget - totalExecuted;
-      const totalRate = totalBudget > 0 ? ((totalExecuted / totalBudget) * 100).toFixed(1) : 0;
 
       document.getElementById('modalSummaryBox').innerHTML = `
         <div class="summary-item"><span class="summary-label">분류</span><span class="summary-value">${categoryKey}</span></div>
@@ -1428,11 +1550,8 @@
         <div class="summary-item"><span class="summary-label">총 예산</span><span class="summary-value">${totalBudget.toLocaleString()} 원</span></div>
         <div class="summary-item"><span class="summary-label">총 집행액</span><span class="summary-value" style="color:#2563eb;">${totalExecuted.toLocaleString()} 원</span></div>
         <div class="summary-item"><span class="summary-label">총 잔액</span><span class="summary-value" style="color:${totalBalance < 0 ? '#dc2626' : '#16a34a'};">${totalBalance.toLocaleString()} 원</span></div>
-        <div class="summary-item"><span class="summary-label">집행률</span><span class="summary-value">${totalRate}%</span></div>
       `;
     }
-
-    renderDetailPieChart(chartLabels, chartData);
   }
 
   function closeModal() {
@@ -1465,28 +1584,6 @@
         resizeDelay: 200,
         scales: { y: { beginAtZero: true, max: 100 } },
         plugins: { legend: { display: false } }
-      }
-    });
-  }
-
-  function renderDetailPieChart(labels, data) {
-    const ctx = document.getElementById('detailPieChart').getContext('2d');
-    if (detailPieChart) detailPieChart.destroy();
-
-    detailPieChart = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: data,
-          backgroundColor: chartPalette
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        resizeDelay: 200,
-        plugins: { legend: { position: 'right' } }
       }
     });
   }
@@ -1542,7 +1639,6 @@
       if (rateChartGen) rateChartGen.resize();
       if (rateChartEtc) rateChartEtc.resize();
       if (govCategoryChart) govCategoryChart.resize();
-      if (detailPieChart) detailPieChart.resize();
     }, 150);
   });
 

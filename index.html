@@ -807,12 +807,12 @@
       rates.push(item.rate);
 
       // 국책과제: 80% 이하 위험 / 80% 초과 정상
-      // 일반용역: 80% 이하 정상 / 80% 초과 위험
+      // 일반용역: 80% 이상이거나 0% 이하일 경우 위험, 80% 이하인 경우 정상
       let isDanger = false;
       if (categoryKey === '국책과제') {
         isDanger = item.rate <= 80;
       } else if (categoryKey === '일반용역') {
-        isDanger = item.rate > 80;
+        isDanger = (item.rate >= 80 || item.rate <= 0);
       }
 
       const tr = document.createElement('tr');

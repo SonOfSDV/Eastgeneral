@@ -60,7 +60,7 @@
       flex-direction: column;
     }
 
-    /* 국책과제 및 기타사업 그리드 레이아웃 */
+    /* 국책과제 및 기타비용 그리드 레이아웃 */
     .gov-grid-2col,
     .bottom-grid-2col,
     .etc-grid-2col {
@@ -75,7 +75,7 @@
       grid-template-columns: 1.8fr 1fr;
     }
 
-    /* 기타사업 영역 높이 확장 스타일 */
+    /* 기타비용 영역 높이 확장 스타일 */
     .etc-grid-2col .card {
       padding: 28px;
       min-height: 520px;
@@ -341,7 +341,7 @@
     <button class="tab-btn active" onclick="switchPage('page-total', this)">📊 통합 월별 손익 현황</button>
     <button class="tab-btn" onclick="switchPage('page-gov', this)">🏛️ 국책과제 현황</button>
     <button class="tab-btn" onclick="switchPage('page-gen', this)">🏢 일반용역 현황</button>
-    <button class="tab-btn" onclick="switchPage('page-etc', this)">🧩 기타사업 현황</button>
+    <button class="tab-btn" onclick="switchPage('page-etc', this)">🧩 기타비용 현황</button>
   </div>
 
   <!-- TAB 1: 통합 월별 손익 현황 -->
@@ -495,8 +495,8 @@
     <div class="card">
       <div class="card-header-flex">
         <div class="card-title-group">
-          <h3><span class="theme-gen-icon">▌</span> 일반용역 사업별 집행률</h3>
-          <p>사업별 집행 달성도 (%)</p>
+          <h3><span class="theme-gen-icon">▌</span> 일반용역 사업별 예산 소진율</h3>
+          <p>사업별 예산 소진 달성도 (%)</p>
         </div>
       </div>
       <div class="chart-container"><canvas id="rateChartGen"></canvas></div>
@@ -517,7 +517,7 @@
               <th class="number">예산 (원)</th>
               <th class="number">집행액 (원)</th>
               <th class="number">잔액 (원)</th>
-              <th class="number">집행률 (%)</th>
+              <th class="number">예산 소진율 (%)</th>
               <th style="text-align: center;">상태</th>
             </tr>
           </thead>
@@ -529,14 +529,14 @@
     </div>
   </div>
 
-  <!-- TAB 4: 기타사업 현황 -->
+  <!-- TAB 4: 기타비용 현황 -->
   <div id="page-etc" class="page-content">
     <div class="etc-grid-2col">
       <!-- 1열: 항목별 연간 지출 현황 -->
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header-flex">
           <div class="card-title-group">
-            <h3><span class="theme-etc-icon">▌</span> 기타사업 지출 현황</h3>
+            <h3><span class="theme-etc-icon">▌</span> 기타비용 지출 현황</h3>
             <p>비목별 연간 지출 금액</p>
           </div>
         </div>
@@ -545,12 +545,12 @@
         </div>
       </div>
 
-      <!-- 2열: 기타사업 상세 목록 -->
+      <!-- 2열: 기타비용 상세 목록 -->
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header-flex">
           <div class="card-title-group">
-            <h3><span class="theme-etc-icon">▌</span> 기타사업 상세 목록</h3>
-            <p>연간 기타사업 지출 목록</p>
+            <h3><span class="theme-etc-icon">▌</span> 기타비용 상세 목록</h3>
+            <p>연간 기타비용 지출 목록</p>
           </div>
         </div>
         <div class="table-scroll-container">
@@ -563,7 +563,7 @@
               </tr>
             </thead>
             <tbody id="tableEtc">
-              <tr><td colspan="3" style="text-align:center; color:#a0aec0;">등록된 기타사업 데이터가 없습니다.</td></tr>
+              <tr><td colspan="3" style="text-align:center; color:#a0aec0;">등록된 기타비용 데이터가 없습니다.</td></tr>
             </tbody>
           </table>
         </div>
@@ -620,8 +620,8 @@
   let globalDataStore = {};
   let selectedYear = "";
 
-  const categoryStore = { '국책과제': [], '일반용역': [], '기타사업': [] };
-  const detailStore = { '국책과제세부': [], '일반용역세부': [], '기타사업세부': [] };
+  const categoryStore = { '국책과제': [], '일반용역': [], '기타비용': [] };
+  const detailStore = { '국책과제세부': [], '일반용역세부': [], '기타비용세부': [] };
 
   let globalQuarterlySummary = {};
   let globalMonthlySummary = {};
@@ -652,15 +652,15 @@
 
       categoryStore['국책과제'] = data['국책과제'] || [];
       categoryStore['일반용역'] = data['일반용역'] || [];
-      categoryStore['기타사업'] = data['기타사업'] || [];
+      categoryStore['기타비용'] = data['기타비용'] || data['기타사업'] || [];
 
       detailStore['국책과제세부'] = data['국책과제세부'] || [];
       detailStore['일반용역세부'] = data['일반용역세부'] || [];
-      detailStore['기타사업세부'] = data['기타사업세부'] || [];
+      detailStore['기타비용세부'] = data['기타비용세부'] || data['기타사업세부'] || [];
 
       renderCategoryPage('국책과제');
       renderCategoryPage('일반용역');
-      renderCategoryPage('기타사업');
+      renderCategoryPage('기타비용');
       renderGovCategorySummary();
 
       setupYearDropdown();
@@ -675,7 +675,7 @@
     const allDetailRows = [
       ...detailStore['국책과제세부'],
       ...detailStore['일반용역세부'],
-      ...detailStore['기타사업세부']
+      ...detailStore['기타비용세부']
     ];
 
     const yearSet = new Set();
@@ -707,7 +707,7 @@
     selectedYear = yearList[0];
     updateTotalMonthlyDashboard();
     renderEtcDashboardCharts();
-    renderCategoryPage('기타사업');
+    renderCategoryPage('기타비용');
   }
 
   function onYearChange() {
@@ -715,7 +715,7 @@
     selectedYear = yearSelect.value;
     updateTotalMonthlyDashboard();
     renderEtcDashboardCharts();
-    renderCategoryPage('기타사업');
+    renderCategoryPage('기타비용');
   }
 
   function switchPage(pageId, btnElement) {
@@ -740,14 +740,14 @@
 
     if (categoryKey === '국책과제') tbodyId = 'tableGov';
     else if (categoryKey === '일반용역') tbodyId = 'tableGen';
-    else if (categoryKey === '기타사업') tbodyId = 'tableEtc';
+    else if (categoryKey === '기타비용') tbodyId = 'tableEtc';
 
     const tableBody = document.getElementById(tbodyId);
     tableBody.innerHTML = '';
 
     const listData = [];
 
-    if (categoryKey === '기타사업') {
+    if (categoryKey === '기타비용') {
       let totalEtcSpent = 0;
       data.forEach((row, index) => {
         const name = row['사업명'] || row['프로젝트명'] || row['비목'] || row['항목명'] || null;
@@ -774,13 +774,13 @@
         const totalTr = document.createElement('tr');
         totalTr.className = 'total-row';
         totalTr.innerHTML = `
-          <td><b>합계</b></td>
+          <td><b>비목 합계</b></td>
           <td class="number">${totalEtcSpent.toLocaleString()}</td>
           <td class="number">100.0%</td>
         `;
         tableBody.appendChild(totalTr);
       } else {
-        tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#a0aec0;">등록된 기타사업 데이터가 없습니다.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#a0aec0;">등록된 기타비용 데이터가 없습니다.</td></tr>`;
       }
       return;
     }
@@ -806,7 +806,14 @@
       labels.push(item.name);
       rates.push(item.rate);
 
-      const isDanger = item.rate < 80;
+      // 국책과제: 80% 이하 위험 / 80% 초과 정상
+      // 일반용역: 80% 이하 정상 / 80% 초과 위험
+      let isDanger = false;
+      if (categoryKey === '국책과제') {
+        isDanger = item.rate <= 80;
+      } else if (categoryKey === '일반용역') {
+        isDanger = item.rate > 80;
+      }
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -831,12 +838,12 @@
     if (categoryKey === '국책과제') {
       renderHorizontalBarChart('rateChartGov', labels, rates);
     } else if (categoryKey === '일반용역') {
-      rateChartGen = renderBarChart('rateChartGen', rateChartGen, labels, rates, '#0284c7');
+      rateChartGen = renderBarChart('rateChartGen', rateChartGen, labels, rates, '#0284c7', '예산 소진율 (%)');
     }
   }
 
   function renderEtcDashboardCharts() {
-    const data = categoryStore['기타사업'] || [];
+    const data = categoryStore['기타비용'] || [];
     const listData = [];
 
     data.forEach((row) => {
@@ -900,8 +907,7 @@
     if (rateChartGov) rateChartGov.destroy();
 
     const backgroundColors = rates.map(r => {
-      if (r >= 80) return '#10b981';
-      if (r >= 20) return '#f59e0b';
+      if (r > 80) return '#10b981';
       return '#ef4444';
     });
 
@@ -1062,7 +1068,7 @@
     const allDetailRows = [
       ...detailStore['국책과제세부'],
       ...detailStore['일반용역세부'],
-      ...detailStore['기타사업세부']
+      ...detailStore['기타비용세부']
     ];
 
     const monthlySummary = {};
@@ -1212,7 +1218,7 @@
     const detailKeys = [
       { key: '국책과제세부', label: '국책과제', badge: 'badge-gov' },
       { key: '일반용역세부', label: '일반용역', badge: 'badge-gen' },
-      { key: '기타사업세부', label: '기타사업', badge: 'badge-etc' }
+      { key: '기타비용세부', label: '기타비용', badge: 'badge-etc' }
     ];
 
     const filteredRows = [];
@@ -1383,7 +1389,7 @@
     const period = row['사업기간'] || row['과제기간'] || row['기간'] || '-';
     const manager = row['책임자'] || row['총괄책임자'] || '-';
 
-    if (categoryKey === '기타사업') {
+    if (categoryKey === '기타비용') {
       document.getElementById('tableTitle').innerText = "월별 지출(매입) 현황 (원)";
 
       modalTableHead.innerHTML = `
@@ -1396,7 +1402,7 @@
         monthlyDataMap[`${i}월`] = 0;
       }
 
-      const etcDetails = detailStore['기타사업세부'] || [];
+      const etcDetails = detailStore['기타비용세부'] || [];
       etcDetails.forEach(item => {
         const itemProj = item['사업명'] || item['프로젝트명'] || item['항목명'] || item['비목'] || '';
         if (itemProj.trim() === projectName.trim() || itemProj.includes(projectName) || projectName.includes(itemProj)) {
@@ -1440,7 +1446,7 @@
       detailTableBody.appendChild(totalTr);
 
       document.getElementById('modalSummaryBox').innerHTML = `
-        <div class="summary-item"><span class="summary-label">분류</span><span class="summary-value">기타사업</span></div>
+        <div class="summary-item"><span class="summary-label">분류</span><span class="summary-value">기타비용</span></div>
         <div class="summary-item"><span class="summary-label">비목</span><span class="summary-value">${projectName}</span></div>
         <div class="summary-item"><span class="summary-label">조회 연도</span><span class="summary-value">${selectedYear}년</span></div>
         <div class="summary-item"><span class="summary-label">총 지출액(매입)</span><span class="summary-value" style="color:#dc2626;">${totalPurchase.toLocaleString()} 원</span></div>
@@ -1593,7 +1599,7 @@
     if (event.target === modal) closeModal();
   }
 
-  function renderBarChart(canvasId, chartInstance, labels, rates, themeColor = '#4f46e5') {
+  function renderBarChart(canvasId, chartInstance, labels, rates, themeColor = '#4f46e5', labelText = '집행률 (%)') {
     const ctx = document.getElementById(canvasId).getContext('2d');
     if (chartInstance) chartInstance.destroy();
 
@@ -1602,7 +1608,7 @@
       data: {
         labels: labels,
         datasets: [{
-          label: '집행률 (%)',
+          label: labelText,
           data: rates,
           backgroundColor: themeColor,
           borderRadius: 6

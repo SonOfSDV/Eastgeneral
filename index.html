@@ -176,7 +176,7 @@
       width: 100%;
       overflow-x: auto;
       overflow-y: auto;
-      max-height: 380px;
+      max-height: 520px; /* 모달 내 스크롤 영역 높이 확장 */
     }
 
     /* 테이블 스타일 */
@@ -246,7 +246,7 @@
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
     }
 
-    /* 모달 스타일 */
+    /* 모달 스타일 (시인성 대폭 개선) */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -255,27 +255,29 @@
       z-index: 1000;
       justify-content: center;
       align-items: center;
+      padding: 20px;
     }
     .modal-overlay.active { display: flex; }
     .modal-content {
       background: white;
-      width: 90%;
-      max-width: 1000px;
-      max-height: 90vh;
+      width: 95%;
+      max-width: 1250px; /* 모달 최대 너비 확장 */
+      max-height: 92vh;
       overflow-y: auto;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.25);
     }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #edf2f7; padding-bottom: 10px; }
-    .modal-header h2 { margin: 0; font-size: 20px; color: #1b2a4a; }
-    .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #a0aec0; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #edf2f7; padding-bottom: 12px; }
+    .modal-header h2 { margin: 0; font-size: 22px; color: #1b2a4a; font-weight: 700; }
+    .close-btn { background: none; border: none; font-size: 28px; cursor: pointer; color: #a0aec0; transition: color 0.2s; }
+    .close-btn:hover { color: #1e293b; }
 
-    /* 모달 그리드: 1열(요약 정보), 2열(세부 정보) 배치 */
+    /* 모달 그리드: 1열(요약 정보), 2열(세부 정보) 비율 최적화 (1 : 2.4) */
     .modal-body-grid {
       display: grid;
-      grid-template-columns: 1fr 1.8fr;
-      gap: 20px;
+      grid-template-columns: 1fr 2.4fr;
+      gap: 24px;
       align-items: start;
     }
 
@@ -283,23 +285,31 @@
       display: flex;
       flex-direction: column;
     }
+    
+    .modal-col h4 {
+      font-size: 15px;
+      color: #334155;
+      font-weight: 700;
+      border-left: 4px solid #1b2a4a;
+      padding-left: 8px;
+    }
 
     .summary-box {
       background: #f8fafc;
-      padding: 16px 20px;
-      border-radius: 8px;
+      padding: 20px;
+      border-radius: 10px;
       font-size: 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
       border: 1px solid #e2e8f0;
     }
     .summary-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px dashed #e2e8f0;
-      padding-bottom: 6px;
+      border-bottom: 1px dashed #cbd5e1;
+      padding-bottom: 8px;
     }
     .summary-item:last-child {
       border-bottom: none;
@@ -588,13 +598,13 @@
     <div class="modal-body-grid" id="modalBodyGrid">
       <!-- 1열: 요약 정보 -->
       <div class="modal-col">
-        <h4 style="margin-top:0; margin-bottom:10px;">요약 정보</h4>
+        <h4 style="margin-top:0; margin-bottom:12px;">요약 정보</h4>
         <div class="summary-box" id="modalSummaryBox"></div>
       </div>
 
       <!-- 2열: 세부 집행 현황 -->
       <div class="modal-col">
-        <h4 id="tableTitle" style="margin-top:0; margin-bottom:10px;">세부 집행 현황 (원)</h4>
+        <h4 id="tableTitle" style="margin-top:0; margin-bottom:12px;">세부 집행 현황 (원)</h4>
         <div class="table-scroll-container">
           <table>
             <thead>
@@ -806,8 +816,6 @@
       labels.push(item.name);
       rates.push(item.rate);
 
-      // 국책과제: 80% 이하 위험 / 80% 초과 정상
-      // 일반용역: 80% 이상이거나 0% 이하일 경우 위험, 80% 이하인 경우 정상
       let isDanger = false;
       if (categoryKey === '국책과제') {
         isDanger = item.rate <= 80;
@@ -1264,7 +1272,7 @@
       <th>사업/항목명</th>
       <th class="number">매출액 (원)</th>
       <th class="number">매입액 (원)</th>
-      <th class="number">영업손익 (원)</th>
+      <th class="number">손익액 (원)</th>
     `;
 
     filteredRows.forEach(row => {

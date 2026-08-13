@@ -75,12 +75,27 @@
       grid-template-columns: 1.8fr 1fr;
     }
 
+    /* 기타사업 영역 높이 확장 스타일 */
+    .etc-grid-2col .card {
+      padding: 28px;
+      min-height: 520px;
+    }
+    .etc-grid-2col .chart-container {
+      height: 440px;
+    }
+    .etc-grid-2col .table-scroll-container {
+      max-height: 440px;
+    }
+
     @media (max-width: 992px) {
       .gov-grid-2col,
       .bottom-grid-2col,
       .etc-grid-2col,
       .modal-body-grid {
         grid-template-columns: 1fr !important;
+      }
+      .etc-grid-2col .card {
+        min-height: auto;
       }
     }
 
@@ -256,10 +271,10 @@
     .modal-header h2 { margin: 0; font-size: 20px; color: #1b2a4a; }
     .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #a0aec0; }
 
-    /* 모달 2열 레이아웃 추가 */
+    /* 모달 그리드: 1열(요약 정보), 2열(세부 정보) 배치 */
     .modal-body-grid {
       display: grid;
-      grid-template-columns: 1.8fr 1fr;
+      grid-template-columns: 1fr 1.8fr;
       gap: 20px;
       align-items: start;
     }
@@ -269,7 +284,6 @@
       flex-direction: column;
     }
 
-    /* 모달 요약 박스 스타일 (세로 배치형 커스텀) */
     .summary-box {
       background: #f8fafc;
       padding: 16px 20px;
@@ -515,15 +529,15 @@
     </div>
   </div>
 
-  <!-- TAB 4: 기타사업 현황 (1열 원형 그래프 제거 및 가로 그래프 단독 배치) -->
+  <!-- TAB 4: 기타사업 현황 -->
   <div id="page-etc" class="page-content">
     <div class="etc-grid-2col">
-      <!-- 1열: 항목별 연간 지출 현황 (가로 그래프 단독) -->
+      <!-- 1열: 항목별 연간 지출 현황 -->
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header-flex">
           <div class="card-title-group">
             <h3><span class="theme-etc-icon">▌</span> 기타사업 지출 현황</h3>
-            <p>항목별 연간 지출 금액</p>
+            <p>비목별 연간 지출 금액</p>
           </div>
         </div>
         <div class="chart-container">
@@ -536,16 +550,16 @@
         <div class="card-header-flex">
           <div class="card-title-group">
             <h3><span class="theme-etc-icon">▌</span> 기타사업 상세 목록</h3>
-            <p>전체 기타사업 수행 목록 (지출액 순 정렬)</p>
+            <p>연간 기타사업 지출 목록</p>
           </div>
         </div>
         <div class="table-scroll-container">
           <table>
             <thead>
               <tr>
-                <th>비목</th>
-                <th class="number">지출액 (원)</th>
-                <th class="number">항목 비중 (%)</th>
+                <th style="width: 50%;">비목</th>
+                <th class="number" style="width: 30%;">지출액 (원)</th>
+                <th class="number" style="width: 20%;">항목 비중 (%)</th>
               </tr>
             </thead>
             <tbody id="tableEtc">
@@ -571,8 +585,14 @@
       <button class="close-btn" onclick="closeModal()">&times;</button>
     </div>
 
-    <!-- 1열: 세부 현황 (표), 2열: 요약 정보 (세로 배치) 2열 그리드 구조 적용 -->
     <div class="modal-body-grid" id="modalBodyGrid">
+      <!-- 1열: 요약 정보 -->
+      <div class="modal-col">
+        <h4 style="margin-top:0; margin-bottom:10px;">요약 정보</h4>
+        <div class="summary-box" id="modalSummaryBox"></div>
+      </div>
+
+      <!-- 2열: 세부 집행 현황 -->
       <div class="modal-col">
         <h4 id="tableTitle" style="margin-top:0; margin-bottom:10px;">세부 집행 현황 (원)</h4>
         <div class="table-scroll-container">
@@ -583,11 +603,6 @@
             <tbody id="detailTableBody"></tbody>
           </table>
         </div>
-      </div>
-
-      <div class="modal-col">
-        <h4 style="margin-top:0; margin-bottom:10px;">요약 정보</h4>
-        <div class="summary-box" id="modalSummaryBox"></div>
       </div>
     </div>
   </div>
@@ -755,7 +770,16 @@
         tableBody.appendChild(tr);
       });
 
-      if (listData.length === 0) {
+      if (listData.length > 0) {
+        const totalTr = document.createElement('tr');
+        totalTr.className = 'total-row';
+        totalTr.innerHTML = `
+          <td><b>합계</b></td>
+          <td class="number">${totalEtcSpent.toLocaleString()}</td>
+          <td class="number">100.0%</td>
+        `;
+        tableBody.appendChild(totalTr);
+      } else {
         tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#a0aec0;">등록된 기타사업 데이터가 없습니다.</td></tr>`;
       }
       return;
@@ -811,7 +835,6 @@
     }
   }
 
-  // 기타사업 대시보드 1열: 가로 막대 그래프만 생성
   function renderEtcDashboardCharts() {
     const data = categoryStore['기타사업'] || [];
     const listData = [];
@@ -839,8 +862,8 @@
           label: '지출액 (원)',
           data: values,
           backgroundColor: '#f59e0b',
-          borderRadius: 4,
-          barThickness: 16
+          borderRadius: 6,
+          barThickness: 22
         }]
       },
       options: {
@@ -865,7 +888,7 @@
           },
           y: {
             grid: { display: false },
-            ticks: { font: { size: 11, weight: '600' } }
+            ticks: { font: { size: 12, weight: '600' } }
           }
         }
       }

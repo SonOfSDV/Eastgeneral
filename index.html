@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EAST 총괄 관리 시스템</title>
+  <title>EAST 운영 모니터링 시스템</title>
   
   <!-- Chart.js 불러오기 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -11,7 +11,101 @@
   <style>
     * { box-sizing: border-box; }
     body { font-family: 'Pretendard', -apple-system, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-    .container { max-width: 1280px; margin: 0 auto; }
+    
+    /* 암호 인증 화면 스타일 */
+    .auth-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-color: #f4f6f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .auth-card {
+      background: white;
+      width: 920px;
+      max-width: 95%;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+    }
+    .auth-left {
+      background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+      color: white;
+      padding: 50px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .auth-logo-box {
+      width: 48px; height: 48px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .auth-left h2 { font-size: 26px; font-weight: 800; margin: 0 0 10px 0; line-height: 1.3; }
+    .auth-left p { margin: 0; font-size: 13.5px; opacity: 0.85; line-height: 1.5; }
+    
+    .auth-right {
+      padding: 50px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .auth-right h3 { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0 0 24px 0; }
+    .auth-input-group { margin-bottom: 20px; position: relative; }
+    .auth-input-group label { display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px; }
+    .auth-input-wrapper { position: relative; display: flex; align-items: center; }
+    .auth-input {
+      width: 100%;
+      padding: 12px 40px 12px 14px;
+      font-size: 15px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .auth-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+    .password-toggle-btn {
+      position: absolute; right: 12px;
+      background: none; border: none; cursor: pointer;
+      color: #94a3b8; font-size: 16px;
+    }
+    .auth-checkbox-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; font-size: 13.5px; color: #475569; cursor: pointer; }
+    .auth-checkbox-wrap input { width: 16px; height: 16px; accent-color: #3b82f6; cursor: pointer; }
+    .auth-submit-btn {
+      width: 100%;
+      background: #5850ec;
+      color: white;
+      border: none;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .auth-submit-btn:hover { background: #4f46e5; }
+    .auth-submit-btn:active { transform: scale(0.99); }
+    .auth-footer-info {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 30px; font-size: 12px; color: #94a3b8;
+    }
+    .auth-error-msg { color: #dc2626; font-size: 12.5px; margin-top: 6px; display: none; }
+
+    @media (max-width: 768px) {
+      .auth-card { grid-template-columns: 1fr; }
+      .auth-left { padding: 30px 20px; }
+      .auth-right { padding: 30px 20px; }
+    }
+
+    /* 메인 컨테이너 (초기 숨김) */
+    .main-app-container { display: none; max-width: 1280px; margin: 0 auto; }
+    .main-app-container.unlocked { display: block; }
     
     header { 
       background: #1b2a4a; 
@@ -75,7 +169,6 @@
       grid-template-columns: 1.8fr 1fr;
     }
 
-    /* 기타비용 영역 높이 확장 스타일 */
     .etc-grid-2col .card {
       padding: 28px;
       min-height: 520px;
@@ -99,12 +192,10 @@
       }
     }
 
-    /* 카드 헤더 공통 스타일 */
     .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
     .card-title-group h3 { margin: 0 0 4px 0; font-size: 18px; color: #1e293b; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
     .card-title-group p { margin: 0; font-size: 13px; color: #64748b; }
 
-    /* 연도 선택 드롭다운 커스텀 스타일 */
     .year-select-container {
       display: flex;
       align-items: center;
@@ -114,15 +205,8 @@
       border-radius: 8px;
       transition: background 0.2s ease;
     }
-    .year-select-container:hover {
-      background: #e2e8f0;
-    }
-    .year-select-label {
-      font-size: 13px;
-      font-weight: 700;
-      color: #1b2a4a;
-      white-space: nowrap;
-    }
+    .year-select-container:hover { background: #e2e8f0; }
+    .year-select-label { font-size: 13px; font-weight: 700; color: #1b2a4a; white-space: nowrap; }
     .year-select {
       appearance: none;
       -webkit-appearance: none;
@@ -140,7 +224,6 @@
       cursor: pointer;
     }
 
-    /* 요약 카드 그리드 */
     .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
     .kpi-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
     .kpi-title { font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 6px; white-space: nowrap; }
@@ -149,7 +232,6 @@
     .text-red { color: #dc2626; }
     .text-green { color: #16a34a; }
 
-    /* 차트 컨테이너 스타일 */
     .chart-container,
     .chart-container-tall,
     .chart-container-doughnut {
@@ -171,15 +253,13 @@
       display: block;
     }
 
-    /* 테이블 영역 및 스크롤 최적화 */
     .table-scroll-container {
       width: 100%;
       overflow-x: auto;
       overflow-y: auto;
-      max-height: 520px; /* 모달 내 스크롤 영역 높이 확장 */
+      max-height: 520px;
     }
 
-    /* 테이블 스타일 */
     table { width: 100%; border-collapse: collapse; margin-top: 5px; }
     th, td { 
       padding: 12px 10px; 
@@ -200,12 +280,6 @@
     td.number, th.number { text-align: right; }
     tr.total-row { background-color: #f1f5f9; font-weight: bold; }
 
-    @media (max-width: 1200px) {
-      th, td { padding: 10px 6px; font-size: 13px; }
-      .kpi-value { font-size: 20px; }
-    }
-
-    /* 비목 목록 요약 리스트 스타일 */
     .category-list { list-style: none; padding: 0; margin: 20px 0 0 0; }
     .category-list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 4px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
     .category-list-item:last-child { border-bottom: none; }
@@ -214,7 +288,6 @@
     .category-value { font-weight: 700; color: #0f172a; white-space: nowrap; }
     .category-rate { font-size: 12px; color: #64748b; margin-left: 6px; white-space: nowrap; }
 
-    /* 배지 스타일 */
     .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; white-space: nowrap; }
     .badge-normal { background-color: #c6f6d5; color: #22543d; }
     .badge-danger { background-color: #fed7d7; color: #742a2a; }
@@ -227,7 +300,6 @@
     .theme-gen-icon { color: #0284c7; font-weight: bold; }
     .theme-etc-icon { color: #d97706; font-weight: bold; }
 
-    /* 클릭 가능 링크 */
     .project-link, .month-link, .quarter-link {
       display: inline-block;
       color: #1e293b;
@@ -246,7 +318,6 @@
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
     }
 
-    /* 모달 스타일 (시인성 대폭 개선) */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -261,7 +332,7 @@
     .modal-content {
       background: white;
       width: 95%;
-      max-width: 1250px; /* 모달 최대 너비 확장 */
+      max-width: 1250px;
       max-height: 92vh;
       overflow-y: auto;
       border-radius: 16px;
@@ -273,7 +344,6 @@
     .close-btn { background: none; border: none; font-size: 28px; cursor: pointer; color: #a0aec0; transition: color 0.2s; }
     .close-btn:hover { color: #1e293b; }
 
-    /* 모달 그리드: 1열(요약 정보), 2열(세부 정보) 비율 최적화 (1 : 2.4) */
     .modal-body-grid {
       display: grid;
       grid-template-columns: 1fr 2.4fr;
@@ -281,11 +351,7 @@
       align-items: start;
     }
 
-    .modal-col {
-      display: flex;
-      flex-direction: column;
-    }
-    
+    .modal-col { display: flex; flex-direction: column; }
     .modal-col h4 {
       font-size: 15px;
       color: #334155;
@@ -311,23 +377,10 @@
       border-bottom: 1px dashed #cbd5e1;
       padding-bottom: 8px;
     }
-    .summary-item:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
-    .summary-label {
-      font-weight: 600;
-      color: #475569;
-      white-space: nowrap;
-    }
-    .summary-value {
-      font-weight: 700;
-      color: #1e293b;
-      text-align: right;
-      word-break: break-all;
-    }
+    .summary-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .summary-label { font-weight: 600; color: #475569; white-space: nowrap; }
+    .summary-value { font-weight: 700; color: #1e293b; text-align: right; word-break: break-all; }
 
-    /* 푸터 */
     footer {
       text-align: center;
       padding: 30px 10px 10px 10px;
@@ -340,10 +393,47 @@
 </head>
 <body>
 
-<div class="container">
+<!-- 암호 입력 인증 화면 -->
+<div id="authScreen" class="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-left">
+      <div class="auth-logo-box">📊</div>
+      <div>
+        <h2>EAST 운영 모니터링</h2>
+        <p style="margin-top: 12px; font-weight: 600;">EAST 총괄 담당 운영</p>
+        <p style="margin-top: 4px;">열람 권한이 있는 담당자만 접근할 수 있습니다.</p>
+      </div>
+      <p style="font-size: 12px; opacity: 0.7;">Secure Portal System</p>
+    </div>
+    <div class="auth-right">
+      <h3>열람 비밀번호를 입력해 주세요</h3>
+      <form onsubmit="handleLogin(event)">
+        <div class="auth-input-group">
+          <label>비밀번호</label>
+          <div class="auth-input-wrapper">
+            <input type="password" id="accessPassword" class="auth-input" placeholder="비밀번호를 입력하세요" required>
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility()">👁️</button>
+          </div>
+          <div id="authError" class="auth-error-msg">비밀번호가 올바르지 않습니다. 다시 확인해 주세요.</div>
+        </div>
+        <label class="auth-checkbox-wrap">
+          <input type="checkbox" id="rememberBrowser"> 이 브라우저에서 기억
+        </label>
+        <button type="submit" class="auth-submit-btn">확인</button>
+      </form>
+      <div class="auth-footer-info">
+        <span>🔒 데이터는 암호로 잠겨 있습니다</span>
+        <span>© 2026 대호</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 대시보드 시스템 -->
+<div id="mainApp" class="main-app-container">
   <header>
-    <h1>EAST 총괄 관리 시스템</h1>
-    <p>매입 매출 관리</p>
+    <h1>EAST 운영 모니터링</h1>
+    <p>총괄 업무 관리</p>
   </header>
 
   <!-- 탭 네비게이션 -->
@@ -542,7 +632,6 @@
   <!-- TAB 4: 기타비용 현황 -->
   <div id="page-etc" class="page-content">
     <div class="etc-grid-2col">
-      <!-- 1열: 항목별 연간 지출 현황 -->
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header-flex">
           <div class="card-title-group">
@@ -555,7 +644,6 @@
         </div>
       </div>
 
-      <!-- 2열: 기타비용 상세 목록 -->
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header-flex">
           <div class="card-title-group">
@@ -584,7 +672,6 @@
   <footer>
     본 대시보드는 사업별 Sheet에서 자동 연동됩니다 · 생성일 <span id="today-date"></span> · designed & built by <strong>대호</strong>
   </footer>
-
 </div>
 
 <!-- 세부 내역 모달 팝업 -->
@@ -596,13 +683,11 @@
     </div>
 
     <div class="modal-body-grid" id="modalBodyGrid">
-      <!-- 1열: 요약 정보 -->
       <div class="modal-col">
         <h4 style="margin-top:0; margin-bottom:12px;">요약 정보</h4>
         <div class="summary-box" id="modalSummaryBox"></div>
       </div>
 
-      <!-- 2열: 세부 집행 현황 -->
       <div class="modal-col">
         <h4 id="tableTitle" style="margin-top:0; margin-bottom:12px;">세부 집행 현황 (원)</h4>
         <div class="table-scroll-container">
@@ -619,6 +704,48 @@
 </div>
 
 <script>
+  // 비밀번호 설정 (필요에 따라 변경하세요)
+  const CORRECT_PASSWORD = "dltmxm@6648D";
+
+  function togglePasswordVisibility() {
+    const pwdInput = document.getElementById('accessPassword');
+    if (pwdInput.type === 'password') {
+      pwdInput.type = 'text';
+    } else {
+      pwdInput.type = 'password';
+    }
+  }
+
+  function handleLogin(event) {
+    event.preventDefault();
+    const enteredPwd = document.getElementById('accessPassword').value;
+    const rememberMe = document.getElementById('rememberBrowser').checked;
+    const errorMsg = document.getElementById('authError');
+
+    if (enteredPwd === CORRECT_PASSWORD) {
+      if (rememberMe) {
+        localStorage.setItem('east_system_auth', 'true');
+      }
+      unlockSystem();
+    } else {
+      errorMsg.style.display = 'block';
+      document.getElementById('accessPassword').focus();
+    }
+  }
+
+  function unlockSystem() {
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('mainApp').classList.add('unlocked');
+    initDashboard();
+  }
+
+  // 페이지 로드 시 기존 인증 상태 확인
+  window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('east_system_auth') === 'true') {
+      unlockSystem();
+    }
+  });
+
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyZ-d5WEeLno018-nO-BEpm7WEE7nX7_TebhyODDlntPNIhDWJbdkJEFo2GKIoeoGBT/exec";
 
   let monthlyChart = null;
@@ -651,6 +778,11 @@
     const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const dateEl = document.getElementById('today-date');
     if (dateEl) dateEl.innerText = dateStr;
+  }
+
+  function initDashboard() {
+    setTodayDate();
+    fetchGoogleSheetData();
   }
 
   async function fetchGoogleSheetData() {
@@ -1684,11 +1816,6 @@
       if (rateChartEtc) rateChartEtc.resize();
       if (govCategoryChart) govCategoryChart.resize();
     }, 150);
-  });
-
-  window.addEventListener('DOMContentLoaded', () => {
-    setTodayDate();
-    fetchGoogleSheetData();
   });
 </script>
 

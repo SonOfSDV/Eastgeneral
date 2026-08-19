@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EAST 운영 모니터링 시스템</title>
+  <title>EAST 총괄 관리 시스템</title>
   
   <!-- Chart.js 불러오기 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -400,7 +400,7 @@
       <div class="auth-logo-box">📊</div>
       <div>
         <h2>EAST 운영 모니터링</h2>
-        <p style="margin-top: 12px; font-weight: 600;">EAST 총괄 담당 운영</p>
+        <p style="margin-top: 12px; font-weight: 600;"> EAST 총괄 담당 운영</p>
         <p style="margin-top: 4px;">열람 권한이 있는 담당자만 접근할 수 있습니다.</p>
       </div>
       <p style="font-size: 12px; opacity: 0.7;">Secure Portal System</p>
@@ -432,8 +432,8 @@
 <!-- 메인 대시보드 시스템 -->
 <div id="mainApp" class="main-app-container">
   <header>
-    <h1>EAST 운영 모니터링</h1>
-    <p>총괄 업무 관리</p>
+    <h1>EAST 총괄 관리 시스템</h1>
+    <p>매입 매출 관리</p>
   </header>
 
   <!-- 탭 네비게이션 -->
@@ -704,8 +704,15 @@
 </div>
 
 <script>
-  // 비밀번호 설정 (필요에 따라 변경하세요)
-  const CORRECT_PASSWORD = "dltmxm@6648D";
+  // 기본 비밀번호("1234")의 SHA-256 해시값 (소스 코드에 평문 비밀번호가 노출되지 않음)
+  const CORRECT_PASSWORD_HASH = "80f0591b5e10ab08c19099103ea58fcf8cce87430c3a2de2a97096c3b17d86f0";
+
+  async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
 
   function togglePasswordVisibility() {
     const pwdInput = document.getElementById('accessPassword');
@@ -716,13 +723,15 @@
     }
   }
 
-  function handleLogin(event) {
+  async function handleLogin(event) {
     event.preventDefault();
     const enteredPwd = document.getElementById('accessPassword').value;
     const rememberMe = document.getElementById('rememberBrowser').checked;
     const errorMsg = document.getElementById('authError');
 
-    if (enteredPwd === CORRECT_PASSWORD) {
+    const enteredPwdHash = await sha256(enteredPwd);
+
+    if (enteredPwdHash === CORRECT_PASSWORD_HASH) {
       if (rememberMe) {
         localStorage.setItem('east_system_auth', 'true');
       }
